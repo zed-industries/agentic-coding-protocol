@@ -1,0 +1,27 @@
+{
+  "name": "agentic-coding-protocol",
+  "version": "0.0.1",
+  "description": "The Agentic Coding Protocol (ACP) is a protocol that standardizes communication between *code editors* (interactive programs for viewing and editing source code) and *coding agents* (programs that use generative AI to autonomously modify code).",
+  "homepage": "https://github.com/zed-industries/agentic-coding-protocol#readme",
+  "bugs": {
+    "url": "https://github.com/zed-industries/agentic-coding-protocol/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zed-industries/agentic-coding-protocol.git"
+  },
+  "license": "MIT",
+  "author": "Zed Industries",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "typescript/generate.js"
+  },
+  "dev-dependencies": {
+    "json-schema-to-typescript": "^15.0.4"
+  }
+}

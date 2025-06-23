@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ClientRequest"
+    },
+    {
+      "$ref": "#/$defs/ClientResult"
+    },
+    {
+      "$ref": "#/$defs/AgentRequest"
+    },
+    {
+      "$ref": "#/$defs/AgentResult"
+    }
+  ],
+  "$defs": {
+    "AgentRequest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReadFile"
+        }
+      ]
+    },
+    "AgentResult": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReadFileResponse"
+        }
+      ]
+    },
+    "ClientRequest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ListThreads"
+        },
+        {
+          "$ref": "#/$defs/OpenThread"
+        }
+      ]
+    },
+    "ClientResult": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ListThreadsResponse"
+        },
+        {
+          "$ref": "#/$defs/OpenThreadResponse"
+        }
+      ]
+    },
+    "FileVersion": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "ListThreads": {
+      "type": "null"
+    },
+    "ListThreadsResponse": {
+      "type": "object",
+      "properties": {
+        "threads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThreadMetadata"
+          }
+        }
+      },
+      "required": [
+        "threads"
+      ]
+    },
+    "MessageSegment": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "Text": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "Image": {
+              "type": "object",
+              "properties": {
+                "format": {
+                  "type": "string"
+                },
+                "content": {
+                  "description": "Base64-encoded image data",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "format",
+                "content"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Image"
+          ]
+        }
+      ]
+    },
+    "OpenThread": {
+      "type": "object",
+      "properties": {
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": [
+        "thread_id"
+      ]
+    },
+    "OpenThreadResponse": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThreadEvent"
+          }
+        }
+      },
+      "required": [
+        "events"
+      ]
+    },
+    "ReadFile": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "ReadFileResponse": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "version": {
+          "$ref": "#/$defs/FileVersion"
+        }
+      },
+      "required": [
+        "version",
+        "content"
+      ]
+    },
+    "ThreadEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "UserMessage": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/MessageSegment"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "UserMessage"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "AgentMessage": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/MessageSegment"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "AgentMessage"
+          ]
+        }
+      ]
+    },
+    "ThreadId": {
+      "type": "string"
+    },
+    "ThreadMetadata": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ]
+    }
+  }
+}
