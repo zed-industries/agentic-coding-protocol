@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import {execFileSync} from "child_process"
+import { execFileSync } from "child_process"
 import { compile, compileFromFile } from 'json-schema-to-typescript'
 import fs from 'fs';
 
@@ -20,7 +20,7 @@ const agentInterface = requestMapToInterface("Agent", agentMethods);
 
 typescriptSource += '\n' + clientInterface + '\n\n' + agentInterface + '\n';
 
-fs.writeFileSync("typescript/acp.ts", typescriptSource, 'utf8')
+fs.writeFileSync("typescript/schema.ts", typescriptSource, 'utf8')
 
 function requestMapToInterface(name, methods) {
   let code = `export interface ${name} {\n`;

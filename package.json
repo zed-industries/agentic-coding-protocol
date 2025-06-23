@@ -13,15 +13,19 @@
   "license": "MIT",
   "author": "Zed Industries",
   "type": "module",
-  "main": "index.js",
+  "main": "typescript/acp.ts",
   "directories": {
     "example": "examples"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "build": "typescript/generate.js"
   },
-  "dev-dependencies": {
-    "json-schema-to-typescript": "^15.0.4"
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "@vitest/ui": "^3.2.4",
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
