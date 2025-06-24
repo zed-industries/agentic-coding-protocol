@@ -1,7 +1,6 @@
 use super::*;
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::channel::mpsc;
 use tokio;
 use tokio::time::{Duration, timeout};
 
@@ -34,16 +33,18 @@ async fn test_client_agent_communication() {
     let client = TestClient;
     let agent = TestAgent;
 
-    let (client_to_agent_tx, client_to_agent_rx) = mpsc::unbounded();
-    let (agent_to_client_tx, agent_to_client_rx) = mpsc::unbounded();
+    let (client_to_agent_tx, client_to_agent_rx) = async_pipe::pipe();
+    let (agent_to_client_tx, agent_to_client_rx) = async_pipe::pipe();
 
-    let (client_connection, client_handle_task) =
+    let (client_connection, client_handle_task, client_io_task) =
         Connection::client_to_agent(client, client_to_agent_tx, agent_to_client_rx);
-    let (agent_connection, agent_handle_task) =
+    let (agent_connection, agent_handle_task, agent_io_task) =
         Connection::agent_to_client(agent, agent_to_client_tx, client_to_agent_rx);
 
-    let client_handle = tokio::spawn(client_handle_task);
-    let agent_handle = tokio::spawn(agent_handle_task);
+    let _task = tokio::spawn(client_handle_task);
+    let _task = tokio::spawn(client_io_task);
+    let _task = tokio::spawn(agent_handle_task);
+    let _task = tokio::spawn(agent_io_task);
 
     let response = agent_connection.request(ReadFileParams {
         path: "test.txt".to_string(),
@@ -55,15 +56,10 @@ async fn test_client_agent_communication() {
     assert_eq!(response.content, "the content");
     assert_eq!(response.version.0, 0);
 
-    // Test client requesting thread list (client connection sends request, agent connection handles it)
     let response = client_connection.request(ListThreadsParams);
     let response = timeout(Duration::from_secs(2), response)
         .await
         .unwrap()
         .unwrap();
     assert_eq!(response.threads.len(), 0);
-
-    // Clean up
-    client_handle.abort();
-    agent_handle.abort();
 }

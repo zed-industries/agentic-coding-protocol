@@ -4,12 +4,15 @@ mod schema;
 
 use anyhow::{Result, anyhow};
 use futures::{
-    FutureExt as _, StreamExt as _,
+    AsyncBufReadExt as _, AsyncRead, AsyncWrite, AsyncWriteExt as _, FutureExt as _,
+    StreamExt as _,
     channel::{
         mpsc::{UnboundedReceiver, UnboundedSender},
         oneshot,
     },
     future::BoxFuture,
+    io::BufReader,
+    select_biased,
 };
 use parking_lot::Mutex;
 pub use schema::*;
@@ -56,9 +59,13 @@ type RequestHandler =
 impl Connection {
     pub fn client_to_agent<C>(
         client: C,
-        input_tx: UnboundedSender<Box<str>>,
-        output_rx: UnboundedReceiver<Box<str>>,
-    ) -> (Self, impl Future<Output = ()>)
+        input_bytes: impl Unpin + AsyncWrite,
+        output_bytes: impl Unpin + AsyncRead,
+    ) -> (
+        Self,
+        impl Future<Output = ()>,
+        impl Future<Output = Result<()>>,
+    )
     where
         C: 'static + Send + Sync + Client,
     {
@@ -68,16 +75,20 @@ impl Connection {
                 let client = client.clone();
                 async move { client.call(method, params).await }.boxed()
             }),
-            input_tx,
-            output_rx,
+            input_bytes,
+            output_bytes,
         )
     }
 
     pub fn agent_to_client<T>(
         agent: T,
-        input_tx: UnboundedSender<Box<str>>,
-        output_rx: UnboundedReceiver<Box<str>>,
-    ) -> (Self, impl Future<Output = ()>)
+        input_bytes: impl Unpin + AsyncWrite,
+        output_bytes: impl Unpin + AsyncRead,
+    ) -> (
+        Self,
+        impl Future<Output = ()>,
+        impl Future<Output = Result<()>>,
+    )
     where
         T: 'static + Send + Sync + Agent,
     {
@@ -87,26 +98,33 @@ impl Connection {
                 let agent = agent.clone();
                 async move { agent.call(method, params).await }.boxed()
             }),
-            input_tx,
-            output_rx,
+            input_bytes,
+            output_bytes,
         )
     }
 
     fn new(
         request_handler: RequestHandler,
-        input_tx: UnboundedSender<Box<str>>,
-        output_rx: UnboundedReceiver<Box<str>>,
-    ) -> (Self, impl Future<Output = ()>) {
+        input_bytes: impl Unpin + AsyncWrite,
+        output_bytes: impl Unpin + AsyncRead,
+    ) -> (
+        Self,
+        impl Future<Output = ()>,
+        impl Future<Output = Result<()>>,
+    ) {
         let state = Arc::new(Mutex::new(ConnectionState {
             response_senders: Default::default(),
         }));
+        let (input_tx, input_rx) = futures::channel::mpsc::unbounded();
+        let (output_tx, output_rx) = futures::channel::mpsc::unbounded();
         let this = Self {
             state: state.clone(),
             input_tx: input_tx.clone(),
             next_id: AtomicI32::new(0),
         };
-        let handle_io = handle_incoming(request_handler, state, input_tx, output_rx);
-        (this, handle_io)
+        let handle_incoming = handle_incoming(request_handler, state, input_tx, output_rx);
+        let handle_io = handle_io(input_bytes, output_bytes, input_rx, output_tx);
+        (this, handle_incoming, handle_io)
     }
 
     pub fn request<R: Request>(&self, params: R) -> impl Future<Output = Result<R::Response>> {
@@ -131,6 +149,38 @@ impl Connection {
     }
 }
 
+async fn handle_io(
+    mut input_bytes: impl Unpin + AsyncWrite,
+    output_bytes: impl Unpin + AsyncRead,
+    mut input_rx: UnboundedReceiver<Box<str>>,
+    output_tx: UnboundedSender<Box<str>>,
+) -> Result<()> {
+    let mut output_reader = BufReader::new(output_bytes);
+    let mut chunk = String::new();
+    loop {
+        select_biased! {
+            line = input_rx.next() => {
+                if let Some(line) = line {
+                    input_bytes.write_all(line.as_bytes()).await.ok();
+                    input_bytes.write(b"\n").await.ok();
+                } else {
+                    break;
+                }
+            }
+            bytes_read = output_reader.read_line(&mut chunk).fuse() => {
+                if bytes_read? == 0 {
+                    break
+                }
+                if output_tx.unbounded_send(chunk.into()).is_err() {
+                    break
+                }
+                chunk = String::new();
+            }
+        }
+    }
+    Ok(())
+}
+
 async fn handle_incoming(
     incoming_handler: RequestHandler,
     state: Arc<Mutex<ConnectionState>>,
@@ -138,6 +188,7 @@ async fn handle_incoming(
     mut output_rx: UnboundedReceiver<Box<str>>,
 ) {
     while let Some(message) = output_rx.next().await {
+        // todo! move json parsing to background io loop
         match serde_json::from_str(&message) {
             Ok(msg) => match msg {
                 AnyMessage::Request { id, method, params } => {
@@ -181,6 +232,7 @@ async fn handle_incoming(
             },
             Err(err) => {
                 eprintln!("error: {err:?} - {}", message);
+                break;
             }
         }
     }

@@ -1,5 +1,6 @@
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -34,6 +35,7 @@ macro_rules! acp_peer {
             async fn call(&self, method_name: Box<str>, params: Box<str>) -> Result<Box<str>> {
                 match method_name.as_ref() {
                     $(stringify!($request_method) => {
+                        // todo! move json parsing to background io loop
                         let request = serde_json::from_str::<$request_name>(&params)?;
                         let response = self.$request_method(request).await?;
                         Ok(serde_json::to_string(&response)?.into())
@@ -109,6 +111,7 @@ pub struct ListThreadsResponse {
 pub struct ThreadMetadata {
     pub id: ThreadId,
     pub title: String,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -122,7 +125,7 @@ pub struct OpenThreadResponse {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ThreadId(String);
+pub struct ThreadId(pub String);
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub enum ThreadEvent {
