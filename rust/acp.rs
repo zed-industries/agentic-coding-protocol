@@ -1,166 +1,187 @@
 #[cfg(test)]
 mod acp_tests;
+mod schema;
 
-use async_trait::async_trait;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use anyhow::{Result, anyhow};
+use futures::{
+    FutureExt as _, StreamExt as _,
+    channel::{
+        mpsc::{UnboundedReceiver, UnboundedSender},
+        oneshot,
+    },
+    future::BoxFuture,
+};
+use parking_lot::Mutex;
+pub use schema::*;
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        atomic::{AtomicI32, Ordering::SeqCst},
+    },
+};
 
-pub trait Request: Serialize + DeserializeOwned {
-    const METHOD: &'static str;
-    type Response: Serialize + DeserializeOwned;
+pub struct Connection {
+    input_tx: UnboundedSender<Box<str>>,
+    state: Arc<Mutex<ConnectionState>>,
+    next_id: AtomicI32,
 }
 
-pub trait Notification: Serialize + DeserializeOwned {
-    const METHOD: &'static str;
+struct ConnectionState {
+    response_senders: HashMap<i32, oneshot::Sender<Result<Box<str>>>>,
 }
 
-#[derive(Serialize)]
-pub struct Method {
-    pub name: &'static str,
-    pub request_type: &'static str,
-    pub response_type: &'static str,
-}
-
-macro_rules! request {
-    (
-        $trait_name:ident,
-        $type_name:ident,
-        $result_type_name:ident,
-        $method_map_name:ident,
-        $(($request_method:ident, $request_name:ident, $response_name:ident)),*
-        $(,)?
-    ) => {
-        #[async_trait]
-        pub trait $trait_name {
-            $(
-                async fn $request_method(&self, request: $request_name) -> $response_name;
-            )*
-        }
-
-        #[derive(Serialize, Deserialize, JsonSchema)]
-        #[serde(untagged)]
-        pub enum $type_name {
-            $(
-                $request_name($request_name),
-            )*
-        }
-
-        #[derive(Serialize, Deserialize, JsonSchema)]
-        #[serde(untagged)]
-        pub enum $result_type_name {
-            $(
-                $response_name($response_name),
-            )*
-        }
-
-        $(impl Request for $request_name {
-            const METHOD: &'static str = stringify!($request_method);
-            type Response = $response_name;
-        })*
-
-        pub static $method_map_name: &[Method] = &[
-            $(
-                Method {
-                    name: stringify!($request_method),
-                    request_type: stringify!($request_name),
-                    response_type: stringify!($response_name),
-                },
-            )*
-        ];
-    };
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum Message {
-    ClientRequest(ClientRequest),
-    ClientResult(ClientResult),
-    AgentRequest(AgentRequest),
-    AgentResult(AgentResult),
-}
-
-request!(
-    Client,
-    ClientRequest,
-    ClientResult,
-    CLIENT_METHODS,
-    (list_threads, ListThreadsParams, ListThreadsResponse),
-    (open_thread, OpenThreadParams, OpenThreadResponse),
-);
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ListThreadsParams;
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ListThreadsResponse {
-    threads: Vec<ThreadMetadata>,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ThreadMetadata {
-    id: ThreadId,
-    title: String,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct OpenThreadParams {
-    thread_id: ThreadId,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct OpenThreadResponse {
-    events: Vec<ThreadEvent>,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ThreadId(String);
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub enum ThreadEvent {
-    UserMessage(Vec<MessageSegment>),
-    AgentMessage(Vec<MessageSegment>),
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub enum MessageSegment {
-    Text(String),
-    Image {
-        format: String,
-        /// Base64-encoded image data
-        content: String,
+enum AnyMessage {
+    Request {
+        id: i32,
+        method: Box<str>,
+        params: Box<str>,
+    },
+    OkResponse {
+        id: i32,
+        result: Box<str>,
+    },
+    ErrorResponse {
+        id: i32,
+        error: String,
     },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ReadFileParams {
-    path: String,
+type RequestHandler =
+    Box<dyn 'static + Send + Fn(Box<str>, Box<str>) -> BoxFuture<'static, Result<Box<str>>>>;
+
+impl Connection {
+    pub fn client_to_agent<C>(
+        client: C,
+        input_tx: UnboundedSender<Box<str>>,
+        output_rx: UnboundedReceiver<Box<str>>,
+    ) -> (Self, impl Future<Output = ()>)
+    where
+        C: 'static + Send + Sync + Client,
+    {
+        let client = Arc::new(client);
+        Self::new(
+            Box::new(move |method, params| {
+                let client = client.clone();
+                async move { client.call(method, params).await }.boxed()
+            }),
+            input_tx,
+            output_rx,
+        )
+    }
+
+    pub fn agent_to_client<T>(
+        agent: T,
+        input_tx: UnboundedSender<Box<str>>,
+        output_rx: UnboundedReceiver<Box<str>>,
+    ) -> (Self, impl Future<Output = ()>)
+    where
+        T: 'static + Send + Sync + Agent,
+    {
+        let agent = Arc::new(agent);
+        Self::new(
+            Box::new(move |method, params| {
+                let agent = agent.clone();
+                async move { agent.call(method, params).await }.boxed()
+            }),
+            input_tx,
+            output_rx,
+        )
+    }
+
+    fn new(
+        request_handler: RequestHandler,
+        input_tx: UnboundedSender<Box<str>>,
+        output_rx: UnboundedReceiver<Box<str>>,
+    ) -> (Self, impl Future<Output = ()>) {
+        let state = Arc::new(Mutex::new(ConnectionState {
+            response_senders: Default::default(),
+        }));
+        let this = Self {
+            state: state.clone(),
+            input_tx: input_tx.clone(),
+            next_id: AtomicI32::new(0),
+        };
+        let handle_io = handle_incoming(request_handler, state, input_tx, output_rx);
+        (this, handle_io)
+    }
+
+    pub fn request<R: Request>(&self, params: R) -> impl Future<Output = Result<R::Response>> {
+        let id = self.next_id.fetch_add(1, SeqCst);
+        let (tx, rx) = oneshot::channel();
+        self.state.lock().response_senders.insert(id, tx);
+        self.input_tx
+            .unbounded_send(
+                serde_json::to_string(&AnyMessage::Request {
+                    id,
+                    method: R::METHOD.into(),
+                    params: serde_json::to_string(&params).unwrap().into(),
+                })
+                .unwrap()
+                .into(),
+            )
+            .ok();
+        async move {
+            let result = rx.await??;
+            Ok(serde_json::from_str(&result)?)
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct FileVersion(u64);
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ReadFileResponse {
-    version: FileVersion,
-    content: String,
-}
-
-request!(
-    Agent,
-    AgentRequest,
-    AgentResult,
-    AGENT_METHODS,
-    (read_file, ReadFileParams, ReadFileResponse),
-);
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct Point {
-    pub row: u32,
-    pub column: u32,
-}
-
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct Range {
-    pub start: Point,
-    pub end: Point,
+async fn handle_incoming(
+    incoming_handler: RequestHandler,
+    state: Arc<Mutex<ConnectionState>>,
+    input_tx: UnboundedSender<Box<str>>,
+    mut output_rx: UnboundedReceiver<Box<str>>,
+) {
+    while let Some(message) = output_rx.next().await {
+        match serde_json::from_str(&message) {
+            Ok(msg) => match msg {
+                AnyMessage::Request { id, method, params } => {
+                    let result = incoming_handler(method, params).await;
+                    match result {
+                        Ok(result) => {
+                            input_tx
+                                .unbounded_send(
+                                    serde_json::to_string(&AnyMessage::OkResponse { id, result })
+                                        .unwrap()
+                                        .into(),
+                                )
+                                .ok();
+                        }
+                        Err(error) => {
+                            input_tx
+                                .unbounded_send(
+                                    serde_json::to_string(&AnyMessage::ErrorResponse {
+                                        id,
+                                        error: error.to_string(),
+                                    })
+                                    .unwrap()
+                                    .into(),
+                                )
+                                .ok();
+                        }
+                    }
+                }
+                AnyMessage::OkResponse { id, result } => {
+                    let state = &mut state.lock();
+                    if let Some(sender) = state.response_senders.remove(&id) {
+                        sender.send(Ok(result)).ok();
+                    }
+                }
+                AnyMessage::ErrorResponse { id, error } => {
+                    let state = &mut state.lock();
+                    if let Some(sender) = state.response_senders.remove(&id) {
+                        sender.send(Err(anyhow!("{}", error))).ok();
+                    }
+                }
+            },
+            Err(err) => {
+                eprintln!("error: {err:?} - {}", message);
+            }
+        }
+    }
 }

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import { execFileSync } from "child_process"
-import { compile, compileFromFile } from 'json-schema-to-typescript'
+// import { execFileSync } from "child_process"
+import { compile } from 'json-schema-to-typescript'
 import fs from 'fs';
 
-execFileSync("cargo", ["run"])
+// execFileSync("cargo", ["run"])
 
 const jsonSchema = JSON.parse(fs.readFileSync("./schema.json", "utf8"));
 const clientMethods = JSON.parse(fs.readFileSync("./target/client_requests.json", "utf8"));

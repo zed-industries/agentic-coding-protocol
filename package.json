@@ -18,8 +18,8 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "vitest",
-    "build": "typescript/generate.js"
+    "test": "cargo test && vitest run",
+    "build": "cargo run && typescript/generate.js"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",
