@@ -58,7 +58,7 @@ export interface Client {
 
 export const CLIENT_METHODS = {
   read_file: "readFile",
-};
+} as const;
 
 export interface Agent {
   listThreads(params: ListThreadsParams): Promise<ListThreadsResponse>;
@@ -68,4 +68,4 @@ export interface Agent {
 export const AGENT_METHODS = {
   list_threads: "listThreads",
   open_thread: "openThread",
-};
+} as const;

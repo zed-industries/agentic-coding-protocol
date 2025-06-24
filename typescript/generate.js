@@ -42,7 +42,7 @@ function requestMapToInterface(name, methods) {
     code += `  "${name}": "${jsMethodName}",`;
     code += "\n";
   }
-  code += "};";
+  code += "} as const;";
 
   return code;
 }

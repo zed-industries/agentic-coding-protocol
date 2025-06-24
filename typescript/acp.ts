@@ -3,22 +3,41 @@ import { Agent, AGENT_METHODS, Client, CLIENT_METHODS } from "./schema.js";
 export * from "./schema.js";
 
 type PendingResponse = {
-  resolve: (response: any) => void;
-  reject: (error: any) => void;
+  resolve: (response: unknown) => void;
+  reject: (error: unknown) => void;
 };
 
-export class Connection {
+type AnyMessage = AnyRequest | AnyResponse;
+
+type AnyRequest = {
+  id: number,
+  method: string,
+  params: unknown
+};
+
+type AnyResponse = { id: number } & Result<unknown>;
+
+type Result<T> = {
+  result: T
+} | {
+  error: {
+    code: number,
+    message: string,
+  }
+}
+
+export class Connection<D, P> {
   #pendingResponses: Map<number, PendingResponse> = new Map();
   #nextRequestId: number = 0;
-  #delegate: Object;
-  #delegateMethods: Record<string, string>;
+  #delegate: D;
+  #delegateMethods: Record<string, keyof D>;
   #peerInput: WritableStream;
   #writeQueue: Promise<void> = Promise.resolve();
 
   constructor(
-    delegate: Object,
-    delegateMethods: Record<string, string>,
-    peerMethods: Record<string, string>,
+    delegate: D,
+    delegateMethods: Record<string, keyof D>,
+    peerMethods: Record<string, keyof P>,
     peerInput: WritableStream,
     peerOutput: ReadableStream,
   ) {
@@ -40,13 +59,13 @@ export class Connection {
     input: WritableStream,
     output: ReadableStream,
   ): Agent {
-    return new Connection(
+    return new Connection<Client, Agent>(
       client,
       CLIENT_METHODS,
       AGENT_METHODS,
       input,
       output,
-    ) as any as Agent;
+    ) as unknown as Agent;
   }
 
   static agentToClient(
@@ -60,7 +79,7 @@ export class Connection {
       CLIENT_METHODS,
       input,
       output,
-    ) as any as Client;
+    ) as unknown as Client;
   }
 
   async #receive(output: ReadableStream) {
@@ -72,47 +91,70 @@ export class Connection {
 
       for (const line of lines) {
         const trimmedLine = line.trim();
+
         if (trimmedLine) {
           const message = JSON.parse(trimmedLine);
-          if (message.method) {
-            const methodName = this.#delegateMethods[message.method];
-            if (
-              methodName &&
-              typeof (this.#delegate as any)[methodName] === "function"
-            ) {
-              try {
-                const result = await (this.#delegate as any)[methodName](
-                  message.params,
-                );
-                this.#writeJSON({ id: message.id, result });
-              } catch (error) {
-                this.#writeJSON({
-                  id: message.id,
-                  error: {
-                    code: (error as any).code ?? 500,
-                    message: (error as any).message,
-                  },
-                });
-              }
-            } else {
-              this.#writeJSON({
-                id: message.id,
-                error: { code: 404, message: "Method Not Found" },
-              });
-            }
-          } else {
-            const pendingResponse = this.#pendingResponses.get(message.id);
-            if (pendingResponse) {
-              if (message.result) {
-                pendingResponse.resolve(message.result);
-              } else if (message.error) {
-                pendingResponse.reject(message.result);
-              }
-              this.#pendingResponses.delete(message.id);
-            }
-          }
+          this.#processMessage(message);
         }
       }
+    }
+  }
+
+  async #processMessage(message: AnyMessage) {
+    if ("method" in message) {
+      let response = await this.#tryCallDelegateMethod(message.method, message.params);
+
+      await this.#sendMessage({
+        id: message.id,
+        ...response
+      });
+    } else {
+      this.#handleResponse(message)
+    }
+  }
+
+  async #tryCallDelegateMethod(method: string, params: unknown): Promise<Result<unknown>> {
+    const methodName = this.#delegateMethods[method];
+
+    if (!methodName ||
+      typeof this.#delegate[methodName] !== "function"
+    ) {
+      return {
+        error: { code: 404, message: "Method Not Found" },
+      };
+    }
+
+    try {
+      const result = await this.#delegate[methodName](params);
+      return { result }
+    } catch (error: unknown) {
+      let code = 500;
+      let errMessage = "Unknown Error";
+
+      if (error && typeof error === "object") {
+        if ("code" in error && typeof error.code === "number") {
+          code = error.code;
+        }
+        if ("message" in error && typeof error.message === "string") {
+          errMessage = error.message;
+        }
+      }
+
+      return {
+        error: { code, message: errMessage },
+      };
+    }
+  }
+
+  #handleResponse(response: AnyResponse) {
+    const pendingResponse = this.#pendingResponses.get(response.id);
+    if (pendingResponse) {
+      if ("result" in response) {
+        pendingResponse.resolve(response.result);
+      } else if ("error" in response) {
+        pendingResponse.reject(response.error);
+      }
+      this.#pendingResponses.delete(response.id);
     }
   }
 
@@ -121,11 +163,11 @@ export class Connection {
     const responsePromise = new Promise((resolve, reject) => {
       this.#pendingResponses.set(id, { resolve, reject });
     });
-    await this.#writeJSON({ id, method, params });
+    await this.#sendMessage({ id, method, params });
     return responsePromise;
   }
 
-  async #writeJSON(json: unknown) {
+  async #sendMessage(json: AnyMessage) {
     const content = JSON.stringify(json) + "\n";
     this.#writeQueue = this.#writeQueue
       .then(async () => {
