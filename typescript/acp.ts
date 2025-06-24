@@ -10,21 +10,23 @@ type PendingResponse = {
 type AnyMessage = AnyRequest | AnyResponse;
 
 type AnyRequest = {
-  id: number,
-  method: string,
-  params: unknown
+  id: number;
+  method: string;
+  params: unknown;
 };
 
 type AnyResponse = { id: number } & Result<unknown>;
 
-type Result<T> = {
-  result: T
-} | {
-  error: {
-    code: number,
-    message: string,
+type Result<T> =
+  | {
+    result: T;
   }
-}
+  | {
+    error: {
+      code: number;
+      message: string;
+    };
+  };
 
 export class Connection<D, P> {
   #pendingResponses: Map<number, PendingResponse> = new Map();
@@ -46,7 +48,12 @@ export class Connection<D, P> {
     this.#peerInput = peerInput;
 
     for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
-      (this as any)[jsMethodName] = (params: unknown) => {
+      const self = this as unknown as Record<
+        keyof P,
+        (params: unknown) => Promise<unknown>
+      >;
+
+      self[jsMethodName] = (params: unknown) => {
         return this.#sendRequest(protoMethodName, params);
       };
     }
@@ -102,23 +109,27 @@ export class Connection<D, P> {
 
   async #processMessage(message: AnyMessage) {
     if ("method" in message) {
-      let response = await this.#tryCallDelegateMethod(message.method, message.params);
+      let response = await this.#tryCallDelegateMethod(
+        message.method,
+        message.params,
+      );
 
       await this.#sendMessage({
         id: message.id,
-        ...response
+        ...response,
       });
     } else {
-      this.#handleResponse(message)
+      this.#handleResponse(message);
     }
   }
 
-  async #tryCallDelegateMethod(method: string, params: unknown): Promise<Result<unknown>> {
+  async #tryCallDelegateMethod(
+    method: string,
+    params: unknown,
+  ): Promise<Result<unknown>> {
     const methodName = this.#delegateMethods[method];
 
-    if (!methodName ||
-      typeof this.#delegate[methodName] !== "function"
-    ) {
+    if (!methodName || typeof this.#delegate[methodName] !== "function") {
       return {
         error: { code: 404, message: "Method Not Found" },
       };
@@ -126,7 +137,7 @@ export class Connection<D, P> {
 
     try {
       const result = await this.#delegate[methodName](params);
-      return { result }
+      return { result };
     } catch (error: unknown) {
       let code = 500;
       let errMessage = "Unknown Error";
