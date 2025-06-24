@@ -81,7 +81,9 @@ export class Connection {
               typeof (this.#delegate as any)[methodName] === "function"
             ) {
               try {
-                const result = await (this.#delegate as any)[methodName](message.params);
+                const result = await (this.#delegate as any)[methodName](
+                  message.params,
+                );
                 this.#writeJSON({ id: message.id, result });
               } catch (error) {
                 this.#writeJSON({

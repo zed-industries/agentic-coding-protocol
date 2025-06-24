@@ -67,9 +67,7 @@
           }
         }
       },
-      "required": [
-        "threads"
-      ]
+      "required": ["threads"]
     },
     "MessageSegment": {
       "oneOf": [
@@ -81,9 +79,7 @@
             }
           },
           "additionalProperties": false,
-          "required": [
-            "Text"
-          ]
+          "required": ["Text"]
         },
         {
           "type": "object",
@@ -99,16 +95,11 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "format",
-                "content"
-              ]
+              "required": ["format", "content"]
             }
           },
           "additionalProperties": false,
-          "required": [
-            "Image"
-          ]
+          "required": ["Image"]
         }
       ]
     },
@@ -119,9 +110,7 @@
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": [
-        "thread_id"
-      ]
+      "required": ["thread_id"]
     },
     "OpenThreadResponse": {
       "type": "object",
@@ -133,9 +122,7 @@
           }
         }
       },
-      "required": [
-        "events"
-      ]
+      "required": ["events"]
     },
     "ReadFileParams": {
       "type": "object",
@@ -144,9 +131,7 @@
           "type": "string"
         }
       },
-      "required": [
-        "path"
-      ]
+      "required": ["path"]
     },
     "ReadFileResponse": {
       "type": "object",
@@ -158,10 +143,7 @@
           "$ref": "#/$defs/FileVersion"
         }
       },
-      "required": [
-        "version",
-        "content"
-      ]
+      "required": ["version", "content"]
     },
     "ThreadEvent": {
       "oneOf": [
@@ -176,9 +158,7 @@
             }
           },
           "additionalProperties": false,
-          "required": [
-            "UserMessage"
-          ]
+          "required": ["UserMessage"]
         },
         {
           "type": "object",
@@ -191,9 +171,7 @@
             }
           },
           "additionalProperties": false,
-          "required": [
-            "AgentMessage"
-          ]
+          "required": ["AgentMessage"]
         }
       ]
     },
@@ -210,10 +188,7 @@
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": [
-        "id",
-        "title"
-      ]
+      "required": ["id", "title"]
     }
   }
 }

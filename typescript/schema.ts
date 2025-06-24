@@ -1,4 +1,8 @@
-export type AgentCodingProtocol = ClientRequest | ClientResult | AgentRequest | AgentResult;
+export type AgentCodingProtocol =
+  | ClientRequest
+  | ClientResult
+  | AgentRequest
+  | AgentResult;
 export type ClientRequest = ReadFileParams;
 export type ClientResult = ReadFileResponse;
 export type FileVersion = number;
@@ -8,24 +12,24 @@ export type ThreadId = string;
 export type AgentResult = ListThreadsResponse | OpenThreadResponse;
 export type ThreadEvent =
   | {
-    UserMessage: MessageSegment[];
-  }
+      UserMessage: MessageSegment[];
+    }
   | {
-    AgentMessage: MessageSegment[];
-  };
+      AgentMessage: MessageSegment[];
+    };
 export type MessageSegment =
   | {
-    Text: string;
-  }
+      Text: string;
+    }
   | {
-    Image: {
-      format: string;
-      /**
-       * Base64-encoded image data
-       */
-      content: string;
+      Image: {
+        format: string;
+        /**
+         * Base64-encoded image data
+         */
+        content: string;
+      };
     };
-  };
 
 export interface ReadFileParams {
   path: string;
@@ -53,7 +57,7 @@ export interface Client {
 }
 
 export const CLIENT_METHODS = {
-  "read_file": "readFile",
+  read_file: "readFile",
 };
 
 export interface Agent {
@@ -62,6 +66,6 @@ export interface Agent {
 }
 
 export const AGENT_METHODS = {
-  "list_threads": "listThreads",
-  "open_thread": "openThread",
+  list_threads: "listThreads",
+  open_thread: "openThread",
 };

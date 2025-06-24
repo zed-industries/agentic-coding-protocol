@@ -19,13 +19,18 @@
     "example": "examples"
   },
   "scripts": {
+    "clean": "rm -rf dist target typescript/schema.ts schema.json && cargo clean",
     "test": "cargo test && vitest run",
-    "build": "cargo run && typescript/generate.js && tsc"
+    "generate": "cargo run && typescript/generate.js && prettier --write typescript/schema.ts schema.json",
+    "build": "npm run generate && tsc",
+    "format": "prettier --write . && cargo fmt",
+    "format:check": "prettier --check . && cargo fmt -- --check"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",
     "@vitest/ui": "^3.2.4",
     "json-schema-to-typescript": "^15.0.4",
+    "prettier": "^3.3.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }
