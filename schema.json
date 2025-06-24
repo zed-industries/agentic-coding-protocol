@@ -18,7 +18,7 @@
     "AgentRequest": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ReadFile"
+          "$ref": "#/$defs/ReadFileParams"
         }
       ]
     },
@@ -32,10 +32,10 @@
     "ClientRequest": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ListThreads"
+          "$ref": "#/$defs/ListThreadsParams"
         },
         {
-          "$ref": "#/$defs/OpenThread"
+          "$ref": "#/$defs/OpenThreadParams"
         }
       ]
     },
@@ -54,7 +54,7 @@
       "format": "uint64",
       "minimum": 0
     },
-    "ListThreads": {
+    "ListThreadsParams": {
       "type": "null"
     },
     "ListThreadsResponse": {
@@ -112,7 +112,7 @@
         }
       ]
     },
-    "OpenThread": {
+    "OpenThreadParams": {
       "type": "object",
       "properties": {
         "thread_id": {
@@ -137,7 +137,7 @@
         "events"
       ]
     },
-    "ReadFile": {
+    "ReadFileParams": {
       "type": "object",
       "properties": {
         "path": {

@@ -1,3 +1,7 @@
+#[cfg(test)]
+mod acp_tests;
+
+use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -18,7 +22,21 @@ pub struct Method {
 }
 
 macro_rules! request {
-    ($type_name:ident, $result_type_name:ident, $method_map_name:ident, $(($request_method:expr, $request_name:ident, $response_name:ident)),* $(,)?) => {
+    (
+        $trait_name:ident,
+        $type_name:ident,
+        $result_type_name:ident,
+        $method_map_name:ident,
+        $(($request_method:ident, $request_name:ident, $response_name:ident)),*
+        $(,)?
+    ) => {
+        #[async_trait]
+        pub trait $trait_name {
+            $(
+                async fn $request_method(&self, request: $request_name) -> $response_name;
+            )*
+        }
+
         #[derive(Serialize, Deserialize, JsonSchema)]
         #[serde(untagged)]
         pub enum $type_name {
@@ -36,14 +54,14 @@ macro_rules! request {
         }
 
         $(impl Request for $request_name {
-            const METHOD: &'static str = $request_method;
+            const METHOD: &'static str = stringify!($request_method);
             type Response = $response_name;
         })*
 
         pub static $method_map_name: &[Method] = &[
             $(
                 Method {
-                    name: $request_method,
+                    name: stringify!($request_method),
                     request_type: stringify!($request_name),
                     response_type: stringify!($response_name),
                 },
@@ -62,15 +80,16 @@ pub enum Message {
 }
 
 request!(
+    Client,
     ClientRequest,
     ClientResult,
     CLIENT_METHODS,
-    ("list_threads", ListThreads, ListThreadsResponse),
-    ("open_thread", OpenThread, OpenThreadResponse),
+    (list_threads, ListThreadsParams, ListThreadsResponse),
+    (open_thread, OpenThreadParams, OpenThreadResponse),
 );
 
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ListThreads;
+pub struct ListThreadsParams;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ListThreadsResponse {
@@ -84,7 +103,7 @@ pub struct ThreadMetadata {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct OpenThread {
+pub struct OpenThreadParams {
     thread_id: ThreadId,
 }
 
@@ -113,7 +132,7 @@ pub enum MessageSegment {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ReadFile {
+pub struct ReadFileParams {
     path: String,
 }
 
@@ -127,10 +146,11 @@ pub struct ReadFileResponse {
 }
 
 request!(
+    Agent,
     AgentRequest,
     AgentResult,
     AGENT_METHODS,
-    ("read_file", ReadFile, ReadFileResponse),
+    (read_file, ReadFileParams, ReadFileResponse),
 );
 
 #[derive(Serialize, Deserialize, JsonSchema)]

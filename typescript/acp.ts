@@ -2,11 +2,13 @@ import { Agent, AGENT_METHODS, Client, CLIENT_METHODS } from "./schema";
 
 export * from "./schema";
 
+type PendingResponse = {
+  resolve: (response: any) => void;
+  reject: (error: any) => void;
+};
+
 export class Connection {
-  #pendingResponses: Map<
-    number,
-    { resolve: (response: any) => void; reject: (error: any) => void }
-  > = new Map();
+  #pendingResponses: Map<number, PendingResponse> = new Map();
   #nextRequestId: number = 0;
   #delegate: Object;
   #delegateMethods: Record<string, string>;
@@ -123,16 +125,18 @@ export class Connection {
 
   async #writeJSON(json: unknown) {
     const content = JSON.stringify(json) + "\n";
-    this.#writeQueue = this.#writeQueue.then(async () => {
-      const writer = this.#peerInput.getWriter();
-      try {
-        await writer.write(content);
-      } finally {
-        writer.releaseLock();
-      }
-    }).catch(() => {
-      // Continue processing writes on error
-    });
+    this.#writeQueue = this.#writeQueue
+      .then(async () => {
+        const writer = this.#peerInput.getWriter();
+        try {
+          await writer.write(content);
+        } finally {
+          writer.releaseLock();
+        }
+      })
+      .catch(() => {
+        // Continue processing writes on error
+      });
     return this.#writeQueue;
   }
 }

@@ -1,6 +1,6 @@
 export type AgentCodingProtocol = ClientRequest | ClientResult | AgentRequest | AgentResult;
-export type ClientRequest = ListThreads | OpenThread;
-export type ListThreads = null;
+export type ClientRequest = ListThreadsParams | OpenThreadParams;
+export type ListThreadsParams = null;
 export type ThreadId = string;
 export type ClientResult = ListThreadsResponse | OpenThreadResponse;
 export type ThreadEvent =
@@ -23,11 +23,11 @@ export type MessageSegment =
         content: string;
       };
     };
-export type AgentRequest = ReadFile;
+export type AgentRequest = ReadFileParams;
 export type AgentResult = ReadFileResponse;
 export type FileVersion = number;
 
-export interface OpenThread {
+export interface OpenThreadParams {
   thread_id: ThreadId;
 }
 export interface ListThreadsResponse {
@@ -40,7 +40,7 @@ export interface ThreadMetadata {
 export interface OpenThreadResponse {
   events: ThreadEvent[];
 }
-export interface ReadFile {
+export interface ReadFileParams {
   path: string;
 }
 export interface ReadFileResponse {
@@ -49,8 +49,8 @@ export interface ReadFileResponse {
 }
 
 export interface Client {
-  listThreads(params: ListThreads): Promise<ListThreadsResponse>;
-  openThread(params: OpenThread): Promise<OpenThreadResponse>;
+  listThreads(params: ListThreadsParams): Promise<ListThreadsResponse>;
+  openThread(params: OpenThreadParams): Promise<OpenThreadResponse>;
 }
 
 export const CLIENT_METHODS = {
@@ -59,7 +59,7 @@ export const CLIENT_METHODS = {
 };
 
 export interface Agent {
-  readFile(params: ReadFile): Promise<ReadFileResponse>;
+  readFile(params: ReadFileParams): Promise<ReadFileResponse>;
 }
 
 export const AGENT_METHODS = {
