@@ -81,20 +81,20 @@ macro_rules! acp_peer {
 }
 
 acp_peer!(
-    Agent,
+    Client,
     ClientRequest,
     ClientResult,
     CLIENT_METHODS,
-    (list_threads, ListThreadsParams, ListThreadsResponse),
-    (open_thread, OpenThreadParams, OpenThreadResponse),
+    (read_file, ReadFileParams, ReadFileResponse),
 );
 
 acp_peer!(
-    Client,
+    Agent,
     AgentRequest,
     AgentResult,
     AGENT_METHODS,
-    (read_file, ReadFileParams, ReadFileResponse),
+    (list_threads, ListThreadsParams, ListThreadsResponse),
+    (open_thread, OpenThreadParams, OpenThreadResponse),
 );
 
 #[derive(Serialize, Deserialize, JsonSchema)]

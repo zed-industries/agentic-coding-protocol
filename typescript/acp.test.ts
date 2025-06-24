@@ -12,6 +12,13 @@ describe("Connection", () => {
 
   it("allows bidirectional communication between client and agent", async () => {
     const client: Client = {
+      readFile: async ({ path }) => ({
+        content: `Contents of ${path}`,
+        version: 1,
+      }),
+    };
+
+    const agent: Agent = {
       listThreads: async () => ({
         threads: [
           { id: "thread-1", title: "First Thread" },
@@ -23,13 +30,6 @@ describe("Connection", () => {
           { UserMessage: [{ Text: `Opening thread ${thread_id}` }] },
           { AgentMessage: [{ Text: "Thread opened successfully" }] },
         ],
-      }),
-    };
-
-    const agent: Agent = {
-      readFile: async ({ path }) => ({
-        content: `Contents of ${path}`,
-        version: 1,
       }),
     };
 
@@ -45,7 +45,7 @@ describe("Connection", () => {
       clientToAgent.readable,
     );
 
-    const fileContent = await agentConnection.readFile({
+    const fileContent = await clientConnection.readFile({
       path: "/test/file.ts",
     });
     expect(fileContent).toEqual({
@@ -53,7 +53,7 @@ describe("Connection", () => {
       version: 1,
     });
 
-    const threads = await clientConnection.listThreads(null);
+    const threads = await agentConnection.listThreads(null);
     expect(threads).toEqual({
       threads: [
         { id: "thread-1", title: "First Thread" },
@@ -61,7 +61,7 @@ describe("Connection", () => {
       ],
     });
 
-    const threadData = await clientConnection.openThread({
+    const threadData = await agentConnection.openThread({
       thread_id: "thread-1",
     });
     expect(threadData).toEqual({
@@ -75,18 +75,18 @@ describe("Connection", () => {
   it("handles errors in bidirectional communication", async () => {
     // Create client that throws errors
     const client: Client = {
-      listThreads: async () => {
-        throw new Error("Failed to list threads");
-      },
-      openThread: async () => {
-        throw new Error("Failed to open thread");
+      readFile: async () => {
+        throw new Error("File not found");
       },
     };
 
     // Create agent that throws errors
     const agent: Agent = {
-      readFile: async () => {
-        throw new Error("File not found");
+      listThreads: async () => {
+        throw new Error("Failed to list threads");
+      },
+      openThread: async () => {
+        throw new Error("Failed to open thread");
       },
     };
 
@@ -103,13 +103,13 @@ describe("Connection", () => {
       clientToAgent.readable,
     );
 
-    // Test error handling in agent->client direction
+    // Test error handling in client->agent direction
     await expect(
-      agentConnection.readFile({ path: "/missing.ts" }),
+      clientConnection.readFile({ path: "/missing.ts" }),
     ).rejects.toThrow();
 
-    // Test error handling in client->agent direction
-    await expect(clientConnection.listThreads(null)).rejects.toThrow();
+    // Test error handling in agent->client direction
+    await expect(agentConnection.listThreads(null)).rejects.toThrow();
   });
 
   it("handles concurrent requests", async () => {
@@ -117,6 +117,17 @@ describe("Connection", () => {
 
     // Create client with delayed responses
     const client: Client = {
+      readFile: async ({ path }) => {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        return {
+          content: `Delayed content of ${path}`,
+          version: Date.now(),
+        };
+      },
+    };
+
+    // Create agent with delayed responses
+    const agent: Agent = {
       listThreads: async () => {
         callCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -130,17 +141,6 @@ describe("Connection", () => {
         await new Promise((resolve) => setTimeout(resolve, 30));
         return {
           events: [{ UserMessage: [{ Text: `Opened ${thread_id}` }] }],
-        };
-      },
-    };
-
-    // Create agent with delayed responses
-    const agent: Agent = {
-      readFile: async ({ path }) => {
-        await new Promise((resolve) => setTimeout(resolve, 40));
-        return {
-          content: `Delayed content of ${path}`,
-          version: Date.now(),
         };
       },
     };
@@ -159,11 +159,11 @@ describe("Connection", () => {
 
     // Send multiple concurrent requests
     const promises = [
-      agentConnection.readFile({ path: "/file1.ts" }),
-      agentConnection.readFile({ path: "/file2.ts" }),
-      clientConnection.listThreads(null),
-      clientConnection.openThread({ thread_id: "test-thread" }),
-      clientConnection.listThreads(null),
+      clientConnection.readFile({ path: "/file1.ts" }),
+      clientConnection.readFile({ path: "/file2.ts" }),
+      agentConnection.listThreads(null),
+      agentConnection.openThread({ thread_id: "test-thread" }),
+      agentConnection.listThreads(null),
     ];
 
     const results = await Promise.all(promises);
@@ -189,6 +189,13 @@ describe("Connection", () => {
     const messageLog: string[] = [];
 
     const client: Client = {
+      readFile: async ({ path }) => {
+        messageLog.push(`readFile called with ${path}`);
+        return { content: "", version: 0 };
+      },
+    };
+
+    const agent: Agent = {
       listThreads: async () => {
         messageLog.push("listThreads called");
         return { threads: [] };
@@ -196,13 +203,6 @@ describe("Connection", () => {
       openThread: async ({ thread_id }) => {
         messageLog.push(`openThread called with ${thread_id}`);
         return { events: [] };
-      },
-    };
-
-    const agent: Agent = {
-      readFile: async ({ path }) => {
-        messageLog.push(`readFile called with ${path}`);
-        return { content: "", version: 0 };
       },
     };
 
@@ -220,10 +220,10 @@ describe("Connection", () => {
     );
 
     // Send requests in specific order
-    await agentConnection.readFile({ path: "/first.ts" });
-    await clientConnection.listThreads(null);
-    await agentConnection.readFile({ path: "/second.ts" });
-    await clientConnection.openThread({ thread_id: "thread-x" });
+    await clientConnection.readFile({ path: "/first.ts" });
+    await agentConnection.listThreads(null);
+    await clientConnection.readFile({ path: "/second.ts" });
+    await agentConnection.openThread({ thread_id: "thread-x" });
 
     // Verify order
     expect(messageLog).toEqual([

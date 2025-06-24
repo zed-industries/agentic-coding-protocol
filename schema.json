@@ -18,20 +18,6 @@
     "AgentRequest": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ReadFileParams"
-        }
-      ]
-    },
-    "AgentResult": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/ReadFileResponse"
-        }
-      ]
-    },
-    "ClientRequest": {
-      "anyOf": [
-        {
           "$ref": "#/$defs/ListThreadsParams"
         },
         {
@@ -39,13 +25,27 @@
         }
       ]
     },
-    "ClientResult": {
+    "AgentResult": {
       "anyOf": [
         {
           "$ref": "#/$defs/ListThreadsResponse"
         },
         {
           "$ref": "#/$defs/OpenThreadResponse"
+        }
+      ]
+    },
+    "ClientRequest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReadFileParams"
+        }
+      ]
+    },
+    "ClientResult": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReadFileResponse"
         }
       ]
     },
