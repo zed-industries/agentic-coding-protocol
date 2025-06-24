@@ -38,33 +38,33 @@ export class Connection<D, P> {
   #textEncoder: TextEncoder;
 
   constructor(
-    delegate: D,
+    delegate: new (peer: P) => D,
     delegateMethods: Record<string, keyof D>,
     peerMethods: Record<string, keyof P>,
     peerInput: WritableStream<Uint8Array>,
     peerOutput: ReadableStream<Uint8Array>,
   ) {
-    this.#delegate = delegate;
     this.#delegateMethods = delegateMethods;
     this.#peerInput = peerInput;
     this.#textEncoder = new TextEncoder();
 
-    for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
-      const self = this as unknown as Record<
-        keyof P,
-        (params: unknown) => Promise<unknown>
-      >;
+    const peer = this as unknown as Record<
+      keyof P,
+      (params: unknown) => Promise<unknown>
+    >;
 
-      self[jsMethodName] = (params: unknown) => {
+    for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
+      peer[jsMethodName] = (params: unknown) => {
         return this.#sendRequest(protoMethodName, params);
       };
     }
 
+    this.#delegate = new delegate(this as unknown as P);
     this.#receive(peerOutput);
   }
 
   static clientToAgent(
-    client: Client,
+    client: new (agent: Agent) => Client,
     input: WritableStream<Uint8Array>,
     output: ReadableStream<Uint8Array>,
   ): Agent {
@@ -78,11 +78,11 @@ export class Connection<D, P> {
   }
 
   static agentToClient(
-    agent: Agent,
+    agent: new (client: Client) => Agent,
     input: WritableStream,
     output: ReadableStream,
   ): Client {
-    return new Connection(
+    return new Connection<Agent, Client>(
       agent,
       AGENT_METHODS,
       CLIENT_METHODS,

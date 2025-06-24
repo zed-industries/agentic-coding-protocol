@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Agent, Client, Connection } from "./acp.js";
+import {
+  Agent,
+  Client,
+  Connection,
+  ListThreadsParams,
+  ListThreadsResponse,
+  OpenThreadParams,
+  OpenThreadResponse,
+  ReadFileParams,
+} from "./acp.js";
 
 describe("Connection", () => {
   let clientToAgent: TransformStream;
@@ -11,26 +20,33 @@ describe("Connection", () => {
   });
 
   it("allows bidirectional communication between client and agent", async () => {
-    const client: Client = {
-      readFile: async ({ path }) => ({
-        content: `Contents of ${path}`,
-        version: 1,
-      }),
+    const client = class implements Client {
+      async readFile({ path }: ReadFileParams) {
+        return {
+          content: `Contents of ${path}`,
+          version: 1,
+        };
+      }
     };
 
-    const agent: Agent = {
-      listThreads: async () => ({
-        threads: [
-          { id: "thread-1", title: "First Thread" },
-          { id: "thread-2", title: "Second Thread" },
-        ],
-      }),
-      openThread: async ({ thread_id }) => ({
-        events: [
-          { UserMessage: [{ Text: `Opening thread ${thread_id}` }] },
-          { AgentMessage: [{ Text: "Thread opened successfully" }] },
-        ],
-      }),
+    const agent = class implements Agent {
+      async listThreads() {
+        return {
+          threads: [
+            { id: "thread-1", title: "First Thread" },
+            { id: "thread-2", title: "Second Thread" },
+          ],
+        };
+      }
+
+      async openThread({ thread_id }: { thread_id: string }) {
+        return {
+          events: [
+            { UserMessage: [{ Text: `Opening thread ${thread_id}` }] },
+            { AgentMessage: [{ Text: "Thread opened successfully" }] },
+          ],
+        };
+      }
     };
 
     const agentConnection = Connection.clientToAgent(
@@ -74,20 +90,20 @@ describe("Connection", () => {
 
   it("handles errors in bidirectional communication", async () => {
     // Create client that throws errors
-    const client: Client = {
-      readFile: async () => {
+    const client = class implements Client {
+      async readFile(_params: ReadFileParams): Promise<never> {
         throw new Error("File not found");
-      },
+      }
     };
 
     // Create agent that throws errors
-    const agent: Agent = {
-      listThreads: async () => {
+    const agent = class implements Agent {
+      async listThreads(_: ListThreadsParams): Promise<ListThreadsResponse> {
         throw new Error("Failed to list threads");
-      },
-      openThread: async () => {
+      }
+      async openThread(_: OpenThreadParams): Promise<OpenThreadResponse> {
         throw new Error("Failed to open thread");
-      },
+      }
     };
 
     // Set up connections
@@ -116,19 +132,19 @@ describe("Connection", () => {
     let callCount = 0;
 
     // Create client with delayed responses
-    const client: Client = {
-      readFile: async ({ path }) => {
+    const client = class implements Client {
+      async readFile({ path }: ReadFileParams) {
         await new Promise((resolve) => setTimeout(resolve, 40));
         return {
           content: `Delayed content of ${path}`,
           version: Date.now(),
         };
-      },
+      }
     };
 
     // Create agent with delayed responses
-    const agent: Agent = {
-      listThreads: async () => {
+    const agent = class implements Agent {
+      async listThreads() {
         callCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
         return {
@@ -136,13 +152,13 @@ describe("Connection", () => {
             { id: `thread-${callCount}`, title: `Thread ${callCount}` },
           ],
         };
-      },
-      openThread: async ({ thread_id }) => {
+      }
+      async openThread({ thread_id }: { thread_id: string }) {
         await new Promise((resolve) => setTimeout(resolve, 30));
         return {
           events: [{ UserMessage: [{ Text: `Opened ${thread_id}` }] }],
         };
-      },
+      }
     };
 
     const agentConnection = Connection.clientToAgent(
@@ -188,22 +204,22 @@ describe("Connection", () => {
   it("handles message ordering correctly", async () => {
     const messageLog: string[] = [];
 
-    const client: Client = {
-      readFile: async ({ path }) => {
+    const client = class implements Client {
+      async readFile({ path }: ReadFileParams) {
         messageLog.push(`readFile called with ${path}`);
         return { content: "", version: 0 };
-      },
+      }
     };
 
-    const agent: Agent = {
-      listThreads: async () => {
+    const agent = class implements Agent {
+      async listThreads() {
         messageLog.push("listThreads called");
         return { threads: [] };
-      },
-      openThread: async ({ thread_id }) => {
+      }
+      async openThread({ thread_id }: OpenThreadParams) {
         messageLog.push(`openThread called with ${thread_id}`);
         return { events: [] };
-      },
+      }
     };
 
     // Set up connections
