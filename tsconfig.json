@@ -4,18 +4,20 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "sourceMap": true,
     "composite": true,
     "incremental": true,
     "declaration": true,
     "allowSyntheticDefaultImports": true,
-    "lib": ["ES2023"],
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
+    "lib": ["ESNext", "DOM", "DOM.AsyncIterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "target": "es2022",
     "types": ["node", "vitest/globals"],
     "rootDir": "typescript",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "vitest": ["./node_modules/vitest"]
+    }
   }
 }

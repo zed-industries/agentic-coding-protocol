@@ -33,19 +33,21 @@ export class Connection<D, P> {
   #nextRequestId: number = 0;
   #delegate: D;
   #delegateMethods: Record<string, keyof D>;
-  #peerInput: WritableStream;
+  #peerInput: WritableStream<Uint8Array>;
   #writeQueue: Promise<void> = Promise.resolve();
+  #textEncoder: TextEncoder;
 
   constructor(
     delegate: D,
     delegateMethods: Record<string, keyof D>,
     peerMethods: Record<string, keyof P>,
-    peerInput: WritableStream,
-    peerOutput: ReadableStream,
+    peerInput: WritableStream<Uint8Array>,
+    peerOutput: ReadableStream<Uint8Array>,
   ) {
     this.#delegate = delegate;
     this.#delegateMethods = delegateMethods;
     this.#peerInput = peerInput;
+    this.#textEncoder = new TextEncoder();
 
     for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
       const self = this as unknown as Record<
@@ -63,8 +65,8 @@ export class Connection<D, P> {
 
   static clientToAgent(
     client: Client,
-    input: WritableStream,
-    output: ReadableStream,
+    input: WritableStream<Uint8Array>,
+    output: ReadableStream<Uint8Array>,
   ): Agent {
     return new Connection<Client, Agent>(
       client,
@@ -89,10 +91,11 @@ export class Connection<D, P> {
     ) as unknown as Client;
   }
 
-  async #receive(output: ReadableStream) {
+  async #receive(output: ReadableStream<Uint8Array>) {
     let content = "";
+    const decoder = new TextDecoder();
     for await (const chunk of output) {
-      content += chunk;
+      content += decoder.decode(chunk, { stream: true });
       const lines = content.split("\n");
       content = lines.pop() || "";
 
@@ -184,7 +187,7 @@ export class Connection<D, P> {
       .then(async () => {
         const writer = this.#peerInput.getWriter();
         try {
-          await writer.write(content);
+          await writer.write(this.#textEncoder.encode(content));
         } finally {
           writer.releaseLock();
         }
