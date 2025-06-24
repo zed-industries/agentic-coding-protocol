@@ -13,13 +13,14 @@
   "license": "MIT",
   "author": "Zed Industries",
   "type": "module",
-  "main": "typescript/acp.ts",
+  "main": "dist/acp.js",
+  "types": "dist/acp.d.ts",
   "directories": {
     "example": "examples"
   },
   "scripts": {
     "test": "cargo test && vitest run",
-    "build": "cargo run && typescript/generate.js"
+    "build": "cargo run && typescript/generate.js && tsc"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",

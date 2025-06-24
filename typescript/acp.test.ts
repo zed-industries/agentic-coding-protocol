@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Agent, Client, Connection } from "../typescript/acp";
+import { Agent, Client, Connection } from "./acp.js";
 
 describe("Connection", () => {
   let clientToAgent: TransformStream;

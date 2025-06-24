@@ -1,6 +1,6 @@
-import { Agent, AGENT_METHODS, Client, CLIENT_METHODS } from "./schema";
+import { Agent, AGENT_METHODS, Client, CLIENT_METHODS } from "./schema.js";
 
-export * from "./schema";
+export * from "./schema.js";
 
 type PendingResponse = {
   resolve: (response: any) => void;
@@ -27,7 +27,7 @@ export class Connection {
     this.#peerInput = peerInput;
 
     for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
-      this[jsMethodName] = (params: unknown) => {
+      (this as any)[jsMethodName] = (params: unknown) => {
         return this.#sendRequest(protoMethodName, params);
       };
     }
@@ -78,17 +78,17 @@ export class Connection {
             const methodName = this.#delegateMethods[message.method];
             if (
               methodName &&
-              typeof this.#delegate[methodName] === "function"
+              typeof (this.#delegate as any)[methodName] === "function"
             ) {
               try {
-                const result = await this.#delegate[methodName](message.params);
+                const result = await (this.#delegate as any)[methodName](message.params);
                 this.#writeJSON({ id: message.id, result });
               } catch (error) {
                 this.#writeJSON({
                   id: message.id,
                   error: {
-                    code: error.code ?? 500,
-                    message: error.message,
+                    code: (error as any).code ?? 500,
+                    message: (error as any).message,
                   },
                 });
               }
