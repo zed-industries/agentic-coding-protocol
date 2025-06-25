@@ -170,7 +170,6 @@ acp_peer!(
         GlobSearchParams,
         GlobSearchResponse
     ),
-    (end_turn, "endTurn", EndTurnParams, EndTurnResponse),
 );
 
 acp_peer!(
@@ -308,16 +307,6 @@ pub struct SendMessageParams {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct SendMessageResponse;
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct EndTurnParams {
-    pub thread_id: ThreadId,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct EndTurnResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

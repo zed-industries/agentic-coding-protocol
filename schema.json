@@ -69,9 +69,6 @@
         },
         {
           "$ref": "#/$defs/GlobSearchParams"
-        },
-        {
-          "$ref": "#/$defs/EndTurnParams"
         }
       ]
     },
@@ -91,9 +88,6 @@
         },
         {
           "$ref": "#/$defs/GlobSearchResponse"
-        },
-        {
-          "$ref": "#/$defs/EndTurnResponse"
         }
       ]
     },
@@ -108,18 +102,6 @@
         }
       },
       "required": ["threadId"]
-    },
-    "EndTurnParams": {
-      "type": "object",
-      "properties": {
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId"]
-    },
-    "EndTurnResponse": {
-      "type": "null"
     },
     "FileVersion": {
       "type": "integer",

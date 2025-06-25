@@ -72,10 +72,6 @@ impl Client for TestClient {
     async fn glob_search(&self, _request: GlobSearchParams) -> Result<GlobSearchResponse> {
         Ok(GlobSearchResponse { matches: vec![] })
     }
-
-    async fn end_turn(&self, _request: EndTurnParams) -> Result<EndTurnResponse> {
-        Ok(EndTurnResponse {})
-    }
 }
 
 #[tokio::test]

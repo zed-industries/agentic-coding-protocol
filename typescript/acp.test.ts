@@ -5,8 +5,6 @@ import {
   Connection,
   CreateThreadParams,
   CreateThreadResponse,
-  EndTurnParams,
-  EndTurnResponse,
   GetThreadEntriesParams,
   GetThreadEntriesResponse,
   GetThreadsParams,
@@ -314,9 +312,6 @@ class StubClient implements Client {
     throw new Error("Method not implemented.");
   }
   globSearch(_: GlobSearchParams): Promise<GlobSearchResponse> {
-    throw new Error("Method not implemented.");
-  }
-  endTurn(_: EndTurnParams): Promise<EndTurnResponse> {
     throw new Error("Method not implemented.");
   }
 }

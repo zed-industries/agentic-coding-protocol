@@ -8,8 +8,7 @@ export type AnyClientRequest =
   | ReadTextFileParams
   | ReadBinaryFileParams
   | StatParams
-  | GlobSearchParams
-  | EndTurnParams;
+  | GlobSearchParams;
 export type MessageChunk = {
   type: "text";
   chunk: string;
@@ -20,11 +19,9 @@ export type AnyClientResult =
   | ReadTextFileResponse
   | ReadBinaryFileResponse
   | StatResponse
-  | GlobSearchResponse
-  | EndTurnResponse;
+  | GlobSearchResponse;
 export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
-export type EndTurnResponse = null;
 export type AnyAgentRequest =
   | GetThreadsParams
   | CreateThreadParams
@@ -76,9 +73,6 @@ export interface StatParams {
 }
 export interface GlobSearchParams {
   pattern: string;
-  threadId: ThreadId;
-}
-export interface EndTurnParams {
   threadId: ThreadId;
 }
 export interface ReadTextFileResponse {
@@ -133,7 +127,6 @@ export interface Client {
   readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
   stat(params: StatParams): Promise<StatResponse>;
   globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
-  endTurn(params: EndTurnParams): Promise<EndTurnResponse>;
 }
 
 export const CLIENT_METHODS = new Set([
@@ -142,7 +135,6 @@ export const CLIENT_METHODS = new Set([
   "readBinaryFile",
   "stat",
   "globSearch",
-  "endTurn",
 ]);
 
 export interface Agent {
