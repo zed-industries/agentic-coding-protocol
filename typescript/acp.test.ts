@@ -3,11 +3,28 @@ import {
   Agent,
   Client,
   Connection,
+  CreateThreadParams,
+  CreateThreadResponse,
+  EndTurnParams,
+  EndTurnResponse,
+  GetThreadEntriesParams,
+  GetThreadEntriesResponse,
   GetThreadsParams,
   GetThreadsResponse,
+  GlobSearchParams,
+  GlobSearchResponse,
   OpenThreadParams,
   OpenThreadResponse,
+  ReadBinaryFileParams,
+  ReadBinaryFileResponse,
   ReadTextFileParams,
+  ReadTextFileResponse,
+  SendMessageParams,
+  SendMessageResponse,
+  StatParams,
+  StatResponse,
+  StreamMessageChunkParams,
+  StreamMessageChunkResponse,
 } from "./acp.js";
 
 describe("Connection", () => {
@@ -20,7 +37,7 @@ describe("Connection", () => {
   });
 
   it("allows bidirectional communication between client and agent", async () => {
-    class TestClient implements Client {
+    class TestClient extends StubClient {
       async readTextFile({ path }: ReadTextFileParams) {
         return {
           content: `Contents of ${path}`,
@@ -29,36 +46,35 @@ describe("Connection", () => {
       }
     }
 
-    class TestAgent implements Agent {
-      async getThreads() {
+    class TestAgent extends StubAgent {
+      async getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
         return {
           threads: [
-            { id: "thread-1", title: "First Thread", modified_at: "" },
-            { id: "thread-2", title: "Second Thread", modified_at: "" },
+            { id: "thread-1", title: "First Thread", modifiedAt: "" },
+            { id: "thread-2", title: "Second Thread", modifiedAt: "" },
           ],
         };
       }
 
-      async openThread(_params: { thread_id: string }) {
+      async openThread(_params: { threadId: string }) {
         return null;
       }
     }
 
     const agentConnection = Connection.clientToAgent(
-      (_connection) => new TestClient(),
+      (agent) => new TestClient(agent),
       clientToAgent.writable,
       agentToClient.readable,
     );
 
     const clientConnection = Connection.agentToClient(
-      (_connection) => new TestAgent(),
+      (client) => new TestAgent(client),
       agentToClient.writable,
       clientToAgent.readable,
     );
 
-    const fileContent = await clientConnection.readTextFile!({
-      thread_id: "thread-1",
-      turn_id: 0,
+    const fileContent = await clientConnection.readTextFile({
+      threadId: "thread-1",
       path: "/test/file.ts",
     });
     expect(fileContent).toEqual({
@@ -69,27 +85,27 @@ describe("Connection", () => {
     const threads = await agentConnection.getThreads!(null);
     expect(threads).toEqual({
       threads: [
-        { id: "thread-1", title: "First Thread", modified_at: "" },
-        { id: "thread-2", title: "Second Thread", modified_at: "" },
+        { id: "thread-1", title: "First Thread", modifiedAt: "" },
+        { id: "thread-2", title: "Second Thread", modifiedAt: "" },
       ],
     });
 
     const threadData = await agentConnection.openThread!({
-      thread_id: "thread-1",
+      threadId: "thread-1",
     });
     expect(threadData).toBeNull();
   });
 
   it("handles errors in bidirectional communication", async () => {
     // Create client that throws errors
-    class TestClient implements Client {
+    class TestClient extends StubClient {
       async readTextFile(_params: ReadTextFileParams): Promise<never> {
         throw new Error("File not found");
       }
     }
 
     // Create agent that throws errors
-    class TestAgent implements Agent {
+    class TestAgent extends StubAgent {
       async getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
         throw new Error("Failed to list threads");
       }
@@ -100,22 +116,21 @@ describe("Connection", () => {
 
     // Set up connections
     const agentConnection = Connection.clientToAgent(
-      (_connection) => new TestClient(),
+      (agent) => new TestClient(agent),
       clientToAgent.writable,
       agentToClient.readable,
     );
 
     const clientConnection = Connection.agentToClient(
-      (_connection) => new TestAgent(),
+      (client) => new TestAgent(client),
       agentToClient.writable,
       clientToAgent.readable,
     );
 
     // Test error handling in client->agent direction
     await expect(
-      clientConnection.readTextFile!({
-        thread_id: "thread-1",
-        turn_id: 0,
+      clientConnection.readTextFile({
+        threadId: "thread-1",
         path: "/missing.ts",
       }),
     ).rejects.toThrow();
@@ -128,7 +143,7 @@ describe("Connection", () => {
     let callCount = 0;
 
     // Create client with delayed responses
-    class TestClient implements Client {
+    class TestClient extends StubClient {
       async readTextFile({ path }: ReadTextFileParams) {
         await new Promise((resolve) => setTimeout(resolve, 40));
         return {
@@ -139,7 +154,7 @@ describe("Connection", () => {
     }
 
     // Create agent with delayed responses
-    class TestAgent implements Agent {
+    class TestAgent extends StubAgent {
       async getThreads() {
         callCount++;
         await new Promise((resolve) => setTimeout(resolve, 50));
@@ -148,43 +163,41 @@ describe("Connection", () => {
             {
               id: `thread-${callCount}`,
               title: `Thread ${callCount}`,
-              modified_at: "",
+              modifiedAt: "",
             },
           ],
         };
       }
-      async openThread(_params: { thread_id: string }) {
+      async openThread(_params: { threadId: string }) {
         await new Promise((resolve) => setTimeout(resolve, 30));
         return null;
       }
     }
 
     const agentConnection = Connection.clientToAgent(
-      (_connection) => new TestClient(),
+      (a) => new TestClient(a),
       clientToAgent.writable,
       agentToClient.readable,
     );
 
     const clientConnection = Connection.agentToClient(
-      (_connection) => new TestAgent(),
+      (client) => new TestAgent(client),
       agentToClient.writable,
       clientToAgent.readable,
     );
 
     // Send multiple concurrent requests
     const promises = [
-      clientConnection.readTextFile!({
-        thread_id: "test-thread",
-        turn_id: 0,
+      clientConnection.readTextFile({
+        threadId: "test-thread",
         path: "/file1.ts",
       }),
-      clientConnection.readTextFile!({
-        thread_id: "test-thread",
-        turn_id: 0,
+      clientConnection.readTextFile({
+        threadId: "test-thread",
         path: "/file2.ts",
       }),
       agentConnection.getThreads!(null),
-      agentConnection.openThread!({ thread_id: "test-thread" }),
+      agentConnection.openThread!({ threadId: "test-thread" }),
       agentConnection.getThreads!(null),
     ];
 
@@ -210,50 +223,48 @@ describe("Connection", () => {
   it("handles message ordering correctly", async () => {
     const messageLog: string[] = [];
 
-    class TestClient implements Client {
+    class TestClient extends StubClient {
       async readTextFile({ path }: ReadTextFileParams) {
         messageLog.push(`readTextFile called with ${path}`);
         return { content: "", version: 0 };
       }
     }
 
-    class TestAgent implements Agent {
+    class TestAgent extends StubAgent {
       async getThreads() {
         messageLog.push("getThreads called");
         return { threads: [] };
       }
-      async openThread({ thread_id }: OpenThreadParams) {
-        messageLog.push(`openThread called with ${thread_id}`);
+      async openThread({ threadId }: OpenThreadParams) {
+        messageLog.push(`openThread called with ${threadId}`);
         return null;
       }
     }
 
     // Set up connections
     const agentConnection = Connection.clientToAgent(
-      (_connection) => new TestClient(),
+      (client) => new TestClient(client),
       clientToAgent.writable,
       agentToClient.readable,
     );
 
     const clientConnection = Connection.agentToClient(
-      (_connection) => new TestAgent(),
+      (client) => new TestAgent(client),
       agentToClient.writable,
       clientToAgent.readable,
     );
 
     // Send requests in specific order
-    await clientConnection.readTextFile!({
-      thread_id: "thread-x",
-      turn_id: 0,
+    await clientConnection.readTextFile({
+      threadId: "thread-x",
       path: "/first.ts",
     });
     await agentConnection.getThreads!(null);
-    await clientConnection.readTextFile!({
-      thread_id: "thread-x",
-      turn_id: 0,
+    await clientConnection.readTextFile({
+      threadId: "thread-x",
       path: "/second.ts",
     });
-    await agentConnection.openThread!({ thread_id: "thread-x" });
+    await agentConnection.openThread!({ threadId: "thread-x" });
 
     // Verify order
     expect(messageLog).toEqual([
@@ -264,3 +275,48 @@ describe("Connection", () => {
     ]);
   });
 });
+
+class StubAgent implements Agent {
+  constructor(private client: Client) {}
+  getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
+    throw new Error("Method not implemented.");
+  }
+  createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
+    throw new Error("Method not implemented.");
+  }
+  openThread(_: OpenThreadParams): Promise<OpenThreadResponse> {
+    throw new Error("Method not implemented.");
+  }
+  getThreadEntries(
+    _: GetThreadEntriesParams,
+  ): Promise<GetThreadEntriesResponse> {
+    throw new Error("Method not implemented.");
+  }
+  sendMessage(_: SendMessageParams): Promise<SendMessageResponse> {
+    throw new Error("Method not implemented.");
+  }
+}
+
+class StubClient implements Client {
+  constructor(private agent: Agent) {}
+  streamMessageChunk(
+    _: StreamMessageChunkParams,
+  ): Promise<StreamMessageChunkResponse> {
+    throw new Error("Method not implemented.");
+  }
+  readTextFile(_: ReadTextFileParams): Promise<ReadTextFileResponse> {
+    throw new Error("Method not implemented.");
+  }
+  readBinaryFile(_: ReadBinaryFileParams): Promise<ReadBinaryFileResponse> {
+    throw new Error("Method not implemented.");
+  }
+  stat(_: StatParams): Promise<StatResponse> {
+    throw new Error("Method not implemented.");
+  }
+  globSearch(_: GlobSearchParams): Promise<GlobSearchResponse> {
+    throw new Error("Method not implemented.");
+  }
+  endTurn(_: EndTurnParams): Promise<EndTurnResponse> {
+    throw new Error("Method not implemented.");
+  }
+}

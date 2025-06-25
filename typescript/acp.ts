@@ -32,15 +32,15 @@ export class Connection<D, P> {
   #pendingResponses: Map<number, PendingResponse> = new Map();
   #nextRequestId: number = 0;
   #delegate: D;
-  #delegateMethods: Record<string, keyof D>;
+  #delegateMethods: Set<string>;
   #peerInput: WritableStream<Uint8Array>;
   #writeQueue: Promise<void> = Promise.resolve();
   #textEncoder: TextEncoder;
 
   constructor(
     delegate: (peer: P) => D,
-    delegateMethods: Record<string, keyof D>,
-    peerMethods: Record<string, keyof P>,
+    delegateMethods: Set<string>,
+    peerMethods: Set<string>,
     peerInput: WritableStream<Uint8Array>,
     peerOutput: ReadableStream<Uint8Array>,
   ) {
@@ -49,13 +49,13 @@ export class Connection<D, P> {
     this.#textEncoder = new TextEncoder();
 
     const peer = this as unknown as Record<
-      keyof P,
+      string,
       (params: unknown) => Promise<unknown>
     >;
 
-    for (const [protoMethodName, jsMethodName] of Object.entries(peerMethods)) {
-      peer[jsMethodName] = (params: unknown) => {
-        return this.#sendRequest(protoMethodName, params);
+    for (const methodName of peerMethods) {
+      peer[methodName] = (params: unknown) => {
+        return this.#sendRequest(methodName, params);
       };
     }
 
@@ -130,9 +130,11 @@ export class Connection<D, P> {
     method: string,
     params: unknown,
   ): Promise<Result<unknown>> {
-    const methodName = this.#delegateMethods[method];
-
-    if (!methodName || typeof this.#delegate[methodName] !== "function") {
+    const methodName = method as keyof D;
+    if (
+      !this.#delegateMethods.has(method) ||
+      typeof this.#delegate[methodName] !== "function"
+    ) {
       return {
         error: { code: 404, message: "Method Not Found" },
       };

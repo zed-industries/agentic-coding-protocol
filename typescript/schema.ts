@@ -15,7 +15,6 @@ export type MessageChunk = {
   chunk: string;
 };
 export type ThreadId = string;
-export type TurnId = number;
 export type AnyClientResult =
   | StreamMessageChunkResponse
   | ReadTextFileResponse
@@ -49,7 +48,7 @@ export type ThreadEntry =
       role: Role;
     }
   | {
-      type: "read_file";
+      type: "readFile";
       content: string;
       path: string;
     };
@@ -57,36 +56,30 @@ export type SendMessageResponse = null;
 
 export interface StreamMessageChunkParams {
   chunk: MessageChunk;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface ReadTextFileParams {
-  line_limit?: number | null;
-  line_offset?: number | null;
+  lineLimit?: number | null;
+  lineOffset?: number | null;
   path: string;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface ReadBinaryFileParams {
-  byte_limit?: number | null;
-  byte_offset?: number | null;
+  byteLimit?: number | null;
+  byteOffset?: number | null;
   path: string;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface StatParams {
   path: string;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface GlobSearchParams {
   pattern: string;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface EndTurnParams {
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface ReadTextFileResponse {
   content: string;
@@ -98,21 +91,20 @@ export interface ReadBinaryFileResponse {
 }
 export interface StatResponse {
   exists: boolean;
-  is_directory: boolean;
+  isDirectory: boolean;
 }
 export interface GlobSearchResponse {
   matches: string[];
 }
 export interface OpenThreadParams {
-  thread_id: ThreadId;
+  threadId: ThreadId;
 }
 export interface GetThreadEntriesParams {
-  thread_id: ThreadId;
+  threadId: ThreadId;
 }
 export interface SendMessageParams {
   message: Message;
-  thread_id: ThreadId;
-  turn_id: TurnId;
+  threadId: ThreadId;
 }
 export interface Message {
   chunks: MessageChunk[];
@@ -124,51 +116,49 @@ export interface GetThreadsResponse {
 export interface ThreadMetadata {
   title: string;
   id: ThreadId;
-  modified_at: string;
+  modifiedAt: string;
 }
 export interface CreateThreadResponse {
-  thread_id: ThreadId;
+  threadId: ThreadId;
 }
 export interface GetThreadEntriesResponse {
   entries: ThreadEntry[];
 }
 
 export interface Client {
-  streamMessageChunk?(
+  streamMessageChunk(
     params: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse>;
-  readTextFile?(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
-  readBinaryFile?(
-    params: ReadBinaryFileParams,
-  ): Promise<ReadBinaryFileResponse>;
-  stat?(params: StatParams): Promise<StatResponse>;
-  globSearch?(params: GlobSearchParams): Promise<GlobSearchResponse>;
-  endTurn?(params: EndTurnParams): Promise<EndTurnResponse>;
+  readTextFile(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
+  readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
+  stat(params: StatParams): Promise<StatResponse>;
+  globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
+  endTurn(params: EndTurnParams): Promise<EndTurnResponse>;
 }
 
-export const CLIENT_METHODS = {
-  stream_message_chunk: "streamMessageChunk",
-  read_text_file: "readTextFile",
-  read_binary_file: "readBinaryFile",
-  stat: "stat",
-  glob_search: "globSearch",
-  end_turn: "endTurn",
-} as const;
+export const CLIENT_METHODS = new Set([
+  "streamMessageChunk",
+  "readTextFile",
+  "readBinaryFile",
+  "stat",
+  "globSearch",
+  "endTurn",
+]);
 
 export interface Agent {
-  getThreads?(params: GetThreadsParams): Promise<GetThreadsResponse>;
-  createThread?(params: CreateThreadParams): Promise<CreateThreadResponse>;
-  openThread?(params: OpenThreadParams): Promise<OpenThreadResponse>;
-  getThreadEntries?(
+  getThreads(params: GetThreadsParams): Promise<GetThreadsResponse>;
+  createThread(params: CreateThreadParams): Promise<CreateThreadResponse>;
+  openThread(params: OpenThreadParams): Promise<OpenThreadResponse>;
+  getThreadEntries(
     params: GetThreadEntriesParams,
   ): Promise<GetThreadEntriesResponse>;
-  sendMessage?(params: SendMessageParams): Promise<SendMessageResponse>;
+  sendMessage(params: SendMessageParams): Promise<SendMessageResponse>;
 }
 
-export const AGENT_METHODS = {
-  get_threads: "getThreads",
-  create_thread: "createThread",
-  open_thread: "openThread",
-  get_thread_entries: "getThreadEntries",
-  send_message: "sendMessage",
-} as const;
+export const AGENT_METHODS = new Set([
+  "getThreads",
+  "createThread",
+  "openThread",
+  "getThreadEntries",
+  "sendMessage",
+]);

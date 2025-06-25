@@ -30,32 +30,17 @@ function requestMapToInterface(name, methods) {
   let code = `export interface ${name} {\n`;
 
   for (const { name, request_type, response_type } of methods) {
-    const jsMethodName = toJsMethodName(name);
-    code += `  ${jsMethodName}?(params: ${request_type}): Promise<${response_type}>;\n`;
+    code += `  ${name}(params: ${request_type}): Promise<${response_type}>;\n`;
   }
   code += "}\n\n";
 
-  code += `export const ${name.toUpperCase()}_METHODS = {`;
+  code += `export const ${name.toUpperCase()}_METHODS = new Set([`;
   code += "\n";
   for (const { name } of methods) {
-    const jsMethodName = toJsMethodName(name);
-    code += `  "${name}": "${jsMethodName}",`;
+    code += `  "${name}",`;
     code += "\n";
   }
-  code += "} as const;";
+  code += "]);";
 
   return code;
-}
-
-function toJsMethodName(name) {
-  const words = name.split("_");
-  return words
-    .map((word, index) => {
-      if (index == 0) {
-        return word;
-      } else {
-        return word[0].toUpperCase() + word.slice(1);
-      }
-    })
-    .join("");
 }

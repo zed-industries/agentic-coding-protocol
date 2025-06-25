@@ -27,7 +27,7 @@ macro_rules! acp_peer {
         $request_enum_name:ident,
         $response_enum_name:ident,
         $method_map_name:ident,
-        $(($request_method:ident, $request_name:ident, $response_name:ident)),*
+        $(($request_method:ident, $request_method_string:expr, $request_name:ident, $response_name:ident)),*
         $(,)?
     ) => {
         #[async_trait(?Send)]
@@ -74,7 +74,7 @@ macro_rules! acp_peer {
             fn from_method_and_params(method: &str, params: &RawValue) -> Result<Self> {
                 match method {
                     $(
-                        stringify!($request_method) => {
+                        $request_method_string => {
                             match serde_json::from_str(params.get()) {
                                 Ok(params) => Ok($request_enum_name::$request_name(params)),
                                 Err(e) => Err(anyhow!(e.to_string())),
@@ -88,7 +88,7 @@ macro_rules! acp_peer {
             fn response_from_method_and_result(method: &str, params: &RawValue) -> Result<Self::Response> {
                 match method {
                     $(
-                        stringify!($request_method) => {
+                        $request_method_string => {
                             match serde_json::from_str(params.get()) {
                                 Ok(params) => Ok($response_enum_name::$response_name(params)),
                                 Err(e) => Err(anyhow!(e.to_string())),
@@ -113,7 +113,7 @@ macro_rules! acp_peer {
         pub static $method_map_name: &[Method] = &[
             $(
                 Method {
-                    name: stringify!($request_method),
+                    name: $request_method_string,
                     request_type: stringify!($request_name),
                     response_type: stringify!($response_name),
                 },
@@ -147,18 +147,30 @@ acp_peer!(
     CLIENT_METHODS,
     (
         stream_message_chunk,
+        "streamMessageChunk",
         StreamMessageChunkParams,
         StreamMessageChunkResponse
     ),
-    (read_text_file, ReadTextFileParams, ReadTextFileResponse),
+    (
+        read_text_file,
+        "readTextFile",
+        ReadTextFileParams,
+        ReadTextFileResponse
+    ),
     (
         read_binary_file,
+        "readBinaryFile",
         ReadBinaryFileParams,
         ReadBinaryFileResponse
     ),
-    (stat, StatParams, StatResponse),
-    (glob_search, GlobSearchParams, GlobSearchResponse),
-    (end_turn, EndTurnParams, EndTurnResponse),
+    (stat, "stat", StatParams, StatResponse),
+    (
+        glob_search,
+        "globSearch",
+        GlobSearchParams,
+        GlobSearchResponse
+    ),
+    (end_turn, "endTurn", EndTurnParams, EndTurnResponse),
 );
 
 acp_peer!(
@@ -167,37 +179,62 @@ acp_peer!(
     AnyAgentRequest,
     AnyAgentResult,
     AGENT_METHODS,
-    (get_threads, GetThreadsParams, GetThreadsResponse),
-    (create_thread, CreateThreadParams, CreateThreadResponse),
-    (open_thread, OpenThreadParams, OpenThreadResponse),
+    (
+        get_threads,
+        "getThreads",
+        GetThreadsParams,
+        GetThreadsResponse
+    ),
+    (
+        create_thread,
+        "createThread",
+        CreateThreadParams,
+        CreateThreadResponse
+    ),
+    (
+        open_thread,
+        "openThread",
+        OpenThreadParams,
+        OpenThreadResponse
+    ),
     (
         get_thread_entries,
+        "getThreadEntries",
         GetThreadEntriesParams,
         GetThreadEntriesResponse
     ),
-    (send_message, SendMessageParams, SendMessageResponse),
+    (
+        send_message,
+        "sendMessage",
+        SendMessageParams,
+        SendMessageResponse
+    ),
 );
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GetThreadsParams;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GetThreadsResponse {
     pub threads: Vec<ThreadMetadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GetThreadEntriesParams {
     pub thread_id: ThreadId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GetThreadEntriesResponse {
     pub entries: Vec<ThreadEntry>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum ThreadEntry {
     Message {
         #[serde(flatten)]
@@ -210,25 +247,27 @@ pub enum ThreadEntry {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Message {
     pub role: Role,
     pub chunks: Vec<MessageChunk>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum MessageChunk {
     Text { chunk: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum Role {
     User,
     Assistant,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadMetadata {
     pub id: ThreadId,
     pub title: String,
@@ -236,54 +275,67 @@ pub struct ThreadMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateThreadParams;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateThreadResponse {
     pub thread_id: ThreadId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct OpenThreadParams {
     pub thread_id: ThreadId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct OpenThreadResponse;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub struct ThreadId(pub String);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct SendMessageParams {
     pub thread_id: ThreadId,
     pub message: Message,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct SendMessageResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct EndTurnParams {
     pub thread_id: ThreadId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct EndTurnResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct FileVersion(pub u64);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct StreamMessageChunkParams {
     pub thread_id: ThreadId,
     pub chunk: MessageChunk,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct StreamMessageChunkResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadTextFileParams {
     pub thread_id: ThreadId,
     pub path: PathBuf,
@@ -294,6 +346,7 @@ pub struct ReadTextFileParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadBinaryFileParams {
     pub thread_id: ThreadId,
     pub path: PathBuf,
@@ -304,35 +357,41 @@ pub struct ReadBinaryFileParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadTextFileResponse {
     pub version: FileVersion,
     pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct ReadBinaryFileResponse {
     pub version: FileVersion,
     pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GlobSearchParams {
     pub thread_id: ThreadId,
     pub pattern: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct GlobSearchResponse {
     pub matches: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct StatParams {
     pub thread_id: ThreadId,
     pub path: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct StatResponse {
     pub exists: bool,
     pub is_directory: bool,
