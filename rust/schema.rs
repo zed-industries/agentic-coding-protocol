@@ -249,17 +249,23 @@ pub struct OpenThreadResponse;
 pub struct ThreadId(pub String);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TurnId(pub u64);
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SendMessageParams {
     pub thread_id: ThreadId,
     pub message: Message,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SendMessageResponse;
+pub struct SendMessageResponse {
+    pub turn_id: TurnId,
+}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EndTurnParams {
     pub thread_id: ThreadId,
+    pub turn_id: TurnId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -271,6 +277,7 @@ pub struct FileVersion(pub u64);
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StreamMessageChunkParams {
     pub thread_id: ThreadId,
+    pub turn_id: TurnId,
     pub chunk: MessageChunk,
 }
 
@@ -280,6 +287,7 @@ pub struct StreamMessageChunkResponse;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadFileParams {
     pub thread_id: ThreadId,
+    pub turn_id: TurnId,
     pub path: PathBuf,
 }
 
@@ -292,6 +300,7 @@ pub struct ReadFileResponse {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchParams {
     pub thread_id: ThreadId,
+    pub turn_id: TurnId,
     pub pattern: String,
 }
 

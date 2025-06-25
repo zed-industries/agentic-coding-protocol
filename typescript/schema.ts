@@ -13,6 +13,7 @@ export type MessageChunk = {
   chunk: string;
 };
 export type ThreadId = string;
+export type TurnId = number;
 export type AnyClientResult =
   | StreamMessageChunkResponse
   | ReadFileResponse
@@ -48,22 +49,25 @@ export type ThreadEntry =
       content: string;
       path: string;
     };
-export type SendMessageResponse = null;
 
 export interface StreamMessageChunkParams {
   chunk: MessageChunk;
   thread_id: ThreadId;
+  turn_id: TurnId;
 }
 export interface ReadFileParams {
   path: string;
   thread_id: ThreadId;
+  turn_id: TurnId;
 }
 export interface GlobSearchParams {
   pattern: string;
   thread_id: ThreadId;
+  turn_id: TurnId;
 }
 export interface EndTurnParams {
   thread_id: ThreadId;
+  turn_id: TurnId;
 }
 export interface ReadFileResponse {
   content: string;
@@ -99,6 +103,9 @@ export interface CreateThreadResponse {
 }
 export interface GetThreadEntriesResponse {
   entries: ThreadEntry[];
+}
+export interface SendMessageResponse {
+  turn_id: TurnId;
 }
 
 export interface Client {

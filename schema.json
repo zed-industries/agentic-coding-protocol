@@ -102,9 +102,12 @@
       "properties": {
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id"]
+      "required": ["thread_id", "turn_id"]
     },
     "EndTurnResponse": {
       "type": "null"
@@ -158,9 +161,12 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "pattern"]
+      "required": ["thread_id", "turn_id", "pattern"]
     },
     "GlobSearchResponse": {
       "type": "object",
@@ -226,9 +232,12 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "path"]
+      "required": ["thread_id", "turn_id", "path"]
     },
     "ReadFileResponse": {
       "type": "object",
@@ -259,7 +268,13 @@
       "required": ["thread_id", "message"]
     },
     "SendMessageResponse": {
-      "type": "null"
+      "type": "object",
+      "properties": {
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
+        }
+      },
+      "required": ["turn_id"]
     },
     "StreamMessageChunkParams": {
       "type": "object",
@@ -269,9 +284,12 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "chunk"]
+      "required": ["thread_id", "turn_id", "chunk"]
     },
     "StreamMessageChunkResponse": {
       "type": "null"
@@ -333,6 +351,11 @@
         }
       },
       "required": ["id", "title", "modified_at"]
+    },
+    "TurnId": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
     }
   }
 }

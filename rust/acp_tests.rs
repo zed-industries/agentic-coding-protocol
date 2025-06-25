@@ -25,7 +25,7 @@ impl Agent for TestAgent {
     }
 
     async fn send_message(&self, _request: SendMessageParams) -> Result<SendMessageResponse> {
-        Ok(SendMessageResponse)
+        Ok(SendMessageResponse { turn_id: TurnId(0) })
     }
 
     async fn get_thread_entries(
@@ -86,6 +86,7 @@ async fn test_client_agent_communication() {
 
             let response = agent_connection.request(ReadFileParams {
                 thread_id: ThreadId("0".into()),
+                turn_id: TurnId(0),
                 path: "test.txt".into(),
             });
             let response = timeout(Duration::from_secs(2), response)
