@@ -189,7 +189,7 @@ where
             .unbounded_send(OutgoingMessage::Request {
                 id,
                 method: method.into(),
-                params: params,
+                params,
             })
             .ok();
         async move { rx.await? }
@@ -240,7 +240,7 @@ where
                                 }
                             } else if let Some(result) = message.result {
                                 if let Some((method, tx)) = response_senders.lock().remove(&message.id) {
-                                    match Out::response_from_method_and_result(&method, result) {
+                                    match Out::response_from_method_and_result(method, result) {
                                         Ok(result) => {
                                             tx.send(Ok(result)).ok();
                                         }

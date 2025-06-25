@@ -3,8 +3,6 @@ import {
   Agent,
   Client,
   Connection,
-  GlobSearchParams,
-  GlobSearchResponse,
   ListThreadsParams,
   ListThreadsResponse,
   OpenThreadParams,
@@ -27,11 +25,6 @@ describe("Connection", () => {
         return {
           content: `Contents of ${path}`,
           version: 1,
-        };
-      }
-      async globSearch(params: GlobSearchParams) {
-        return {
-          matches: [],
         };
       }
     };
