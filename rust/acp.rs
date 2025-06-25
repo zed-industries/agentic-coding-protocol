@@ -231,7 +231,7 @@ where
                                         incoming_tx.unbounded_send((message.id, params)).ok();
                                     }
                                     Err(error) => {
-                                        log::error!("failed to parse incoming {method} message params: {}", error);
+                                        log::error!("failed to parse incoming {method} message params: {}. Raw: {}", error, incoming_line);
                                     }
                                 }
                             } else if let Some(error) = message.error {
@@ -245,14 +245,14 @@ where
                                             tx.send(Ok(result)).ok();
                                         }
                                         Err(error) => {
-                                            log::error!("failed to parse {method} message result: {}", error);
+                                            log::error!("failed to parse {method} message result: {}. Raw: {}", error, result);
                                         }
                                     }
                                 }
                             }
                         }
                         Err(error) => {
-                            log::error!("failed to parse incoming message: {}", error);
+                            log::error!("failed to parse incoming message: {}. Raw: {}", error, incoming_line);
                         }
                     }
                     incoming_line.clear();

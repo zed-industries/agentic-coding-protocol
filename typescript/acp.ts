@@ -38,7 +38,7 @@ export class Connection<D, P> {
   #textEncoder: TextEncoder;
 
   constructor(
-    delegate: new (peer: P) => D,
+    delegate: (peer: P) => D,
     delegateMethods: Record<string, keyof D>,
     peerMethods: Record<string, keyof P>,
     peerInput: WritableStream<Uint8Array>,
@@ -59,12 +59,12 @@ export class Connection<D, P> {
       };
     }
 
-    this.#delegate = new delegate(this as unknown as P);
+    this.#delegate = delegate(this as unknown as P);
     this.#receive(peerOutput);
   }
 
   static clientToAgent(
-    client: new (agent: Agent) => Client,
+    client: (agent: Agent) => Client,
     input: WritableStream<Uint8Array>,
     output: ReadableStream<Uint8Array>,
   ): Agent {
@@ -78,7 +78,7 @@ export class Connection<D, P> {
   }
 
   static agentToClient(
-    agent: new (client: Client) => Agent,
+    agent: (client: Client) => Agent,
     input: WritableStream,
     output: ReadableStream,
   ): Client {

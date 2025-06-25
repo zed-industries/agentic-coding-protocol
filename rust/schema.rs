@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -145,6 +147,7 @@ acp_peer!(
     CLIENT_METHODS,
     (read_file, ReadFileParams, ReadFileResponse),
     (glob_search, GlobSearchParams, GlobSearchResponse),
+    (end_turn, EndTurnParams, EndTurnResponse),
 );
 
 acp_peer!(
@@ -153,23 +156,80 @@ acp_peer!(
     AnyAgentRequest,
     AnyAgentResult,
     AGENT_METHODS,
-    (list_threads, ListThreadsParams, ListThreadsResponse),
+    (get_threads, GetThreadsParams, GetThreadsResponse),
+    (create_thread, CreateThreadParams, CreateThreadResponse),
     (open_thread, OpenThreadParams, OpenThreadResponse),
+    (
+        get_thread_entries,
+        GetThreadEntriesParams,
+        GetThreadEntriesResponse
+    ),
+    (send_message, SendMessageParams, SendMessageResponse),
 );
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ListThreadsParams;
+pub struct GetThreadsParams;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ListThreadsResponse {
+pub struct GetThreadsResponse {
     pub threads: Vec<ThreadMetadata>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetThreadEntriesParams {
+    pub thread_id: ThreadId,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetThreadEntriesResponse {
+    pub entries: Vec<ThreadEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ThreadEntry {
+    Message {
+        #[serde(flatten)]
+        message: Message,
+    },
+    ReadFile {
+        path: PathBuf,
+        content: String,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct Message {
+    pub role: Role,
+    pub chunks: Vec<MessageChunk>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum MessageChunk {
+    Text { chunk: String },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    User,
+    Assistant,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ThreadMetadata {
     pub id: ThreadId,
     pub title: String,
-    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct CreateThreadParams;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct CreateThreadResponse {
+    pub thread_id: ThreadId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -178,32 +238,39 @@ pub struct OpenThreadParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct OpenThreadResponse {
-    pub events: Vec<ThreadEvent>,
-}
+pub struct OpenThreadResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ThreadId(pub String);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub enum ThreadEvent {
-    UserMessage(Vec<MessageSegment>),
-    AgentMessage(Vec<MessageSegment>),
+pub struct TurnId(pub u64);
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct SendMessageParams {
+    pub thread_id: ThreadId,
+    pub message: Message,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub enum MessageSegment {
-    Text(String),
-    Image {
-        format: String,
-        /// Base64-encoded image data
-        content: String,
-    },
+pub struct SendMessageResponse {
+    pub turn_id: TurnId,
 }
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct EndTurnParams {
+    pub thread_id: ThreadId,
+    pub turn_id: TurnId,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct EndTurnResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadFileParams {
-    pub path: String,
+    pub thread_id: ThreadId,
+    pub turn_id: TurnId,
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -217,6 +284,8 @@ pub struct ReadFileResponse {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchParams {
+    pub thread_id: ThreadId,
+    pub turn_id: TurnId,
     pub pattern: String,
 }
 

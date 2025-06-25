@@ -18,20 +18,38 @@
     "AnyAgentRequest": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ListThreadsParams"
+          "$ref": "#/$defs/GetThreadsParams"
+        },
+        {
+          "$ref": "#/$defs/CreateThreadParams"
         },
         {
           "$ref": "#/$defs/OpenThreadParams"
+        },
+        {
+          "$ref": "#/$defs/GetThreadEntriesParams"
+        },
+        {
+          "$ref": "#/$defs/SendMessageParams"
         }
       ]
     },
     "AnyAgentResult": {
       "anyOf": [
         {
-          "$ref": "#/$defs/ListThreadsResponse"
+          "$ref": "#/$defs/GetThreadsResponse"
+        },
+        {
+          "$ref": "#/$defs/CreateThreadResponse"
         },
         {
           "$ref": "#/$defs/OpenThreadResponse"
+        },
+        {
+          "$ref": "#/$defs/GetThreadEntriesResponse"
+        },
+        {
+          "$ref": "#/$defs/SendMessageResponse"
         }
       ]
     },
@@ -42,6 +60,9 @@
         },
         {
           "$ref": "#/$defs/GlobSearchParams"
+        },
+        {
+          "$ref": "#/$defs/EndTurnParams"
         }
       ]
     },
@@ -52,22 +73,94 @@
         },
         {
           "$ref": "#/$defs/GlobSearchResponse"
+        },
+        {
+          "$ref": "#/$defs/EndTurnResponse"
         }
       ]
+    },
+    "CreateThreadParams": {
+      "type": "null"
+    },
+    "CreateThreadResponse": {
+      "type": "object",
+      "properties": {
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": ["thread_id"]
+    },
+    "EndTurnParams": {
+      "type": "object",
+      "properties": {
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
+        }
+      },
+      "required": ["thread_id", "turn_id"]
+    },
+    "EndTurnResponse": {
+      "type": "null"
     },
     "FileVersion": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0
     },
+    "GetThreadEntriesParams": {
+      "type": "object",
+      "properties": {
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": ["thread_id"]
+    },
+    "GetThreadEntriesResponse": {
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThreadEntry"
+          }
+        }
+      },
+      "required": ["entries"]
+    },
+    "GetThreadsParams": {
+      "type": "null"
+    },
+    "GetThreadsResponse": {
+      "type": "object",
+      "properties": {
+        "threads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThreadMetadata"
+          }
+        }
+      },
+      "required": ["threads"]
+    },
     "GlobSearchParams": {
       "type": "object",
       "properties": {
         "pattern": {
           "type": "string"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["pattern"]
+      "required": ["thread_id", "turn_id", "pattern"]
     },
     "GlobSearchResponse": {
       "type": "object",
@@ -81,52 +174,35 @@
       },
       "required": ["matches"]
     },
-    "ListThreadsParams": {
-      "type": "null"
-    },
-    "ListThreadsResponse": {
+    "Message": {
       "type": "object",
       "properties": {
-        "threads": {
+        "chunks": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ThreadMetadata"
+            "$ref": "#/$defs/MessageChunk"
           }
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
         }
       },
-      "required": ["threads"]
+      "required": ["role", "chunks"]
     },
-    "MessageSegment": {
+    "MessageChunk": {
       "oneOf": [
         {
           "type": "object",
           "properties": {
-            "Text": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "chunk": {
               "type": "string"
             }
           },
-          "additionalProperties": false,
-          "required": ["Text"]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "Image": {
-              "type": "object",
-              "properties": {
-                "format": {
-                  "type": "string"
-                },
-                "content": {
-                  "description": "Base64-encoded image data",
-                  "type": "string"
-                }
-              },
-              "required": ["format", "content"]
-            }
-          },
-          "additionalProperties": false,
-          "required": ["Image"]
+          "required": ["type", "chunk"]
         }
       ]
     },
@@ -140,25 +216,22 @@
       "required": ["thread_id"]
     },
     "OpenThreadResponse": {
-      "type": "object",
-      "properties": {
-        "events": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ThreadEvent"
-          }
-        }
-      },
-      "required": ["events"]
+      "type": "null"
     },
     "ReadFileParams": {
       "type": "object",
       "properties": {
         "path": {
           "type": "string"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["path"]
+      "required": ["thread_id", "turn_id", "path"]
     },
     "ReadFileResponse": {
       "type": "object",
@@ -172,33 +245,67 @@
       },
       "required": ["version", "content"]
     },
-    "ThreadEvent": {
+    "Role": {
+      "type": "string",
+      "enum": ["user", "assistant"]
+    },
+    "SendMessageParams": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "$ref": "#/$defs/Message"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": ["thread_id", "message"]
+    },
+    "SendMessageResponse": {
+      "type": "object",
+      "properties": {
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
+        }
+      },
+      "required": ["turn_id"]
+    },
+    "ThreadEntry": {
       "oneOf": [
         {
           "type": "object",
           "properties": {
-            "UserMessage": {
+            "type": {
+              "type": "string",
+              "const": "message"
+            },
+            "chunks": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/MessageSegment"
+                "$ref": "#/$defs/MessageChunk"
               }
+            },
+            "role": {
+              "$ref": "#/$defs/Role"
             }
           },
-          "additionalProperties": false,
-          "required": ["UserMessage"]
+          "required": ["type", "role", "chunks"]
         },
         {
           "type": "object",
           "properties": {
-            "AgentMessage": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/MessageSegment"
-              }
+            "type": {
+              "type": "string",
+              "const": "read_file"
+            },
+            "content": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
             }
           },
-          "additionalProperties": false,
-          "required": ["AgentMessage"]
+          "required": ["type", "path", "content"]
         }
       ]
     },
@@ -211,15 +318,20 @@
         "title": {
           "type": "string"
         },
-        "created_at": {
-          "type": "string",
-          "format": "date-time"
-        },
         "id": {
           "$ref": "#/$defs/ThreadId"
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time"
         }
       },
-      "required": ["id", "title", "created_at"]
+      "required": ["id", "title", "modified_at"]
+    },
+    "TurnId": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
     }
   }
 }

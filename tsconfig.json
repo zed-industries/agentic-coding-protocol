@@ -19,5 +19,6 @@
     "paths": {
       "vitest": ["./node_modules/vitest"]
     }
-  }
+  },
+  "exclude": ["**/dist/**"]
 }

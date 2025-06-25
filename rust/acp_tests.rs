@@ -10,12 +10,29 @@ pub struct TestAgent;
 
 #[async_trait(?Send)]
 impl Agent for TestAgent {
-    async fn list_threads(&self, _request: ListThreadsParams) -> Result<ListThreadsResponse> {
-        Ok(ListThreadsResponse { threads: vec![] })
+    async fn get_threads(&self, _request: GetThreadsParams) -> Result<GetThreadsResponse> {
+        Ok(GetThreadsResponse { threads: vec![] })
     }
 
     async fn open_thread(&self, _request: OpenThreadParams) -> Result<OpenThreadResponse> {
-        Ok(OpenThreadResponse { events: vec![] })
+        Ok(OpenThreadResponse)
+    }
+
+    async fn create_thread(&self, _request: CreateThreadParams) -> Result<CreateThreadResponse> {
+        Ok(CreateThreadResponse {
+            thread_id: ThreadId("test-thread".into()),
+        })
+    }
+
+    async fn send_message(&self, _request: SendMessageParams) -> Result<SendMessageResponse> {
+        Ok(SendMessageResponse { turn_id: TurnId(0) })
+    }
+
+    async fn get_thread_entries(
+        &self,
+        _request: GetThreadEntriesParams,
+    ) -> Result<GetThreadEntriesResponse> {
+        Ok(GetThreadEntriesResponse { entries: vec![] })
     }
 }
 
@@ -30,6 +47,10 @@ impl Client for TestClient {
 
     async fn glob_search(&self, _request: GlobSearchParams) -> Result<GlobSearchResponse> {
         Ok(GlobSearchResponse { matches: vec![] })
+    }
+
+    async fn end_turn(&self, _request: EndTurnParams) -> Result<EndTurnResponse> {
+        Ok(EndTurnResponse {})
     }
 }
 
@@ -57,7 +78,9 @@ async fn test_client_agent_communication() {
             let _task = tokio::spawn(agent_io_task);
 
             let response = agent_connection.request(ReadFileParams {
-                path: "test.txt".to_string(),
+                thread_id: ThreadId("0".into()),
+                turn_id: TurnId(0),
+                path: "test.txt".into(),
             });
             let response = timeout(Duration::from_secs(2), response)
                 .await
@@ -66,7 +89,7 @@ async fn test_client_agent_communication() {
             assert_eq!(response.content, "the content");
             assert_eq!(response.version.0, 0);
 
-            let response = client_connection.request(ListThreadsParams);
+            let response = client_connection.request(GetThreadsParams);
             let response = timeout(Duration::from_secs(2), response)
                 .await
                 .unwrap()
