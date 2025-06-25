@@ -59,7 +59,13 @@
           "$ref": "#/$defs/StreamMessageChunkParams"
         },
         {
-          "$ref": "#/$defs/ReadFileParams"
+          "$ref": "#/$defs/ReadTextFileParams"
+        },
+        {
+          "$ref": "#/$defs/ReadBinaryFileParams"
+        },
+        {
+          "$ref": "#/$defs/StatParams"
         },
         {
           "$ref": "#/$defs/GlobSearchParams"
@@ -75,7 +81,13 @@
           "$ref": "#/$defs/StreamMessageChunkResponse"
         },
         {
-          "$ref": "#/$defs/ReadFileResponse"
+          "$ref": "#/$defs/ReadTextFileResponse"
+        },
+        {
+          "$ref": "#/$defs/ReadBinaryFileResponse"
+        },
+        {
+          "$ref": "#/$defs/StatResponse"
         },
         {
           "$ref": "#/$defs/GlobSearchResponse"
@@ -224,9 +236,19 @@
     "OpenThreadResponse": {
       "type": "null"
     },
-    "ReadFileParams": {
+    "ReadBinaryFileParams": {
       "type": "object",
       "properties": {
+        "byte_limit": {
+          "type": ["integer", "null"],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "byte_offset": {
+          "type": ["integer", "null"],
+          "format": "uint64",
+          "minimum": 0
+        },
         "path": {
           "type": "string"
         },
@@ -239,7 +261,44 @@
       },
       "required": ["thread_id", "turn_id", "path"]
     },
-    "ReadFileResponse": {
+    "ReadBinaryFileResponse": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "version": {
+          "$ref": "#/$defs/FileVersion"
+        }
+      },
+      "required": ["version", "content"]
+    },
+    "ReadTextFileParams": {
+      "type": "object",
+      "properties": {
+        "line_limit": {
+          "type": ["integer", "null"],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "line_offset": {
+          "type": ["integer", "null"],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "path": {
+          "type": "string"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
+        }
+      },
+      "required": ["thread_id", "turn_id", "path"]
+    },
+    "ReadTextFileResponse": {
       "type": "object",
       "properties": {
         "content": {
@@ -263,18 +322,42 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["thread_id", "message"]
-    },
-    "SendMessageResponse": {
-      "type": "object",
-      "properties": {
+        },
         "turn_id": {
           "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["turn_id"]
+      "required": ["thread_id", "turn_id", "message"]
+    },
+    "SendMessageResponse": {
+      "type": "null"
+    },
+    "StatParams": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "turn_id": {
+          "$ref": "#/$defs/TurnId"
+        }
+      },
+      "required": ["thread_id", "turn_id", "path"]
+    },
+    "StatResponse": {
+      "type": "object",
+      "properties": {
+        "exists": {
+          "type": "boolean"
+        },
+        "is_directory": {
+          "type": "boolean"
+        }
+      },
+      "required": ["exists", "is_directory"]
     },
     "StreamMessageChunkParams": {
       "type": "object",

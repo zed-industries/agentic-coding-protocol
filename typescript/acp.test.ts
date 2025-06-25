@@ -7,7 +7,7 @@ import {
   GetThreadsResponse,
   OpenThreadParams,
   OpenThreadResponse,
-  ReadFileParams,
+  ReadTextFileParams,
 } from "./acp.js";
 
 describe("Connection", () => {
@@ -21,7 +21,7 @@ describe("Connection", () => {
 
   it("allows bidirectional communication between client and agent", async () => {
     class TestClient implements Client {
-      async readFile({ path }: ReadFileParams) {
+      async readTextFile({ path }: ReadTextFileParams) {
         return {
           content: `Contents of ${path}`,
           version: 1,
@@ -56,7 +56,7 @@ describe("Connection", () => {
       clientToAgent.readable,
     );
 
-    const fileContent = await clientConnection.readFile!({
+    const fileContent = await clientConnection.readTextFile!({
       thread_id: "thread-1",
       turn_id: 0,
       path: "/test/file.ts",
@@ -83,7 +83,7 @@ describe("Connection", () => {
   it("handles errors in bidirectional communication", async () => {
     // Create client that throws errors
     class TestClient implements Client {
-      async readFile(_params: ReadFileParams): Promise<never> {
+      async readTextFile(_params: ReadTextFileParams): Promise<never> {
         throw new Error("File not found");
       }
     }
@@ -113,7 +113,7 @@ describe("Connection", () => {
 
     // Test error handling in client->agent direction
     await expect(
-      clientConnection.readFile!({
+      clientConnection.readTextFile!({
         thread_id: "thread-1",
         turn_id: 0,
         path: "/missing.ts",
@@ -129,7 +129,7 @@ describe("Connection", () => {
 
     // Create client with delayed responses
     class TestClient implements Client {
-      async readFile({ path }: ReadFileParams) {
+      async readTextFile({ path }: ReadTextFileParams) {
         await new Promise((resolve) => setTimeout(resolve, 40));
         return {
           content: `Delayed content of ${path}`,
@@ -173,12 +173,12 @@ describe("Connection", () => {
 
     // Send multiple concurrent requests
     const promises = [
-      clientConnection.readFile!({
+      clientConnection.readTextFile!({
         thread_id: "test-thread",
         turn_id: 0,
         path: "/file1.ts",
       }),
-      clientConnection.readFile!({
+      clientConnection.readTextFile!({
         thread_id: "test-thread",
         turn_id: 0,
         path: "/file2.ts",
@@ -211,8 +211,8 @@ describe("Connection", () => {
     const messageLog: string[] = [];
 
     class TestClient implements Client {
-      async readFile({ path }: ReadFileParams) {
-        messageLog.push(`readFile called with ${path}`);
+      async readTextFile({ path }: ReadTextFileParams) {
+        messageLog.push(`readTextFile called with ${path}`);
         return { content: "", version: 0 };
       }
     }
@@ -242,13 +242,13 @@ describe("Connection", () => {
     );
 
     // Send requests in specific order
-    await clientConnection.readFile!({
+    await clientConnection.readTextFile!({
       thread_id: "thread-x",
       turn_id: 0,
       path: "/first.ts",
     });
     await agentConnection.getThreads!(null);
-    await clientConnection.readFile!({
+    await clientConnection.readTextFile!({
       thread_id: "thread-x",
       turn_id: 0,
       path: "/second.ts",
@@ -257,9 +257,9 @@ describe("Connection", () => {
 
     // Verify order
     expect(messageLog).toEqual([
-      "readFile called with /first.ts",
+      "readTextFile called with /first.ts",
       "getThreads called",
-      "readFile called with /second.ts",
+      "readTextFile called with /second.ts",
       "openThread called with thread-x",
     ]);
   });

@@ -5,7 +5,9 @@ export type AgentCodingProtocol =
   | AnyAgentResult;
 export type AnyClientRequest =
   | StreamMessageChunkParams
-  | ReadFileParams
+  | ReadTextFileParams
+  | ReadBinaryFileParams
+  | StatParams
   | GlobSearchParams
   | EndTurnParams;
 export type MessageChunk = {
@@ -16,7 +18,9 @@ export type ThreadId = string;
 export type TurnId = number;
 export type AnyClientResult =
   | StreamMessageChunkResponse
-  | ReadFileResponse
+  | ReadTextFileResponse
+  | ReadBinaryFileResponse
+  | StatResponse
   | GlobSearchResponse
   | EndTurnResponse;
 export type StreamMessageChunkResponse = null;
@@ -49,13 +53,28 @@ export type ThreadEntry =
       content: string;
       path: string;
     };
+export type SendMessageResponse = null;
 
 export interface StreamMessageChunkParams {
   chunk: MessageChunk;
   thread_id: ThreadId;
   turn_id: TurnId;
 }
-export interface ReadFileParams {
+export interface ReadTextFileParams {
+  line_limit?: number | null;
+  line_offset?: number | null;
+  path: string;
+  thread_id: ThreadId;
+  turn_id: TurnId;
+}
+export interface ReadBinaryFileParams {
+  byte_limit?: number | null;
+  byte_offset?: number | null;
+  path: string;
+  thread_id: ThreadId;
+  turn_id: TurnId;
+}
+export interface StatParams {
   path: string;
   thread_id: ThreadId;
   turn_id: TurnId;
@@ -69,9 +88,17 @@ export interface EndTurnParams {
   thread_id: ThreadId;
   turn_id: TurnId;
 }
-export interface ReadFileResponse {
+export interface ReadTextFileResponse {
   content: string;
   version: FileVersion;
+}
+export interface ReadBinaryFileResponse {
+  content: string;
+  version: FileVersion;
+}
+export interface StatResponse {
+  exists: boolean;
+  is_directory: boolean;
 }
 export interface GlobSearchResponse {
   matches: string[];
@@ -85,6 +112,7 @@ export interface GetThreadEntriesParams {
 export interface SendMessageParams {
   message: Message;
   thread_id: ThreadId;
+  turn_id: TurnId;
 }
 export interface Message {
   chunks: MessageChunk[];
@@ -104,22 +132,25 @@ export interface CreateThreadResponse {
 export interface GetThreadEntriesResponse {
   entries: ThreadEntry[];
 }
-export interface SendMessageResponse {
-  turn_id: TurnId;
-}
 
 export interface Client {
   streamMessageChunk?(
     params: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse>;
-  readFile?(params: ReadFileParams): Promise<ReadFileResponse>;
+  readTextFile?(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
+  readBinaryFile?(
+    params: ReadBinaryFileParams,
+  ): Promise<ReadBinaryFileResponse>;
+  stat?(params: StatParams): Promise<StatResponse>;
   globSearch?(params: GlobSearchParams): Promise<GlobSearchResponse>;
   endTurn?(params: EndTurnParams): Promise<EndTurnResponse>;
 }
 
 export const CLIENT_METHODS = {
   stream_message_chunk: "streamMessageChunk",
-  read_file: "readFile",
+  read_text_file: "readTextFile",
+  read_binary_file: "readBinaryFile",
+  stat: "stat",
   glob_search: "globSearch",
   end_turn: "endTurn",
 } as const;

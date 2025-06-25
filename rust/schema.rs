@@ -150,7 +150,13 @@ acp_peer!(
         StreamMessageChunkParams,
         StreamMessageChunkResponse
     ),
-    (read_file, ReadFileParams, ReadFileResponse),
+    (read_text_file, ReadTextFileParams, ReadTextFileResponse),
+    (
+        read_binary_file,
+        ReadBinaryFileParams,
+        ReadBinaryFileResponse
+    ),
+    (stat, StatParams, StatResponse),
     (glob_search, GlobSearchParams, GlobSearchResponse),
     (end_turn, EndTurnParams, EndTurnResponse),
 );
@@ -248,19 +254,26 @@ pub struct OpenThreadResponse;
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
 pub struct ThreadId(pub String);
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TurnId(pub u64);
+
+impl TurnId {
+    pub fn post_inc(&mut self) -> TurnId {
+        let id = *self;
+        self.0 += 1;
+        id
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SendMessageParams {
     pub thread_id: ThreadId,
+    pub turn_id: TurnId,
     pub message: Message,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SendMessageResponse {
-    pub turn_id: TurnId,
-}
+pub struct SendMessageResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EndTurnParams {
@@ -285,14 +298,35 @@ pub struct StreamMessageChunkParams {
 pub struct StreamMessageChunkResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ReadFileParams {
+pub struct ReadTextFileParams {
     pub thread_id: ThreadId,
     pub turn_id: TurnId,
     pub path: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_offset: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_limit: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ReadFileResponse {
+pub struct ReadBinaryFileParams {
+    pub thread_id: ThreadId,
+    pub turn_id: TurnId,
+    pub path: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byte_offset: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub byte_limit: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ReadTextFileResponse {
+    pub version: FileVersion,
+    pub content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ReadBinaryFileResponse {
     pub version: FileVersion,
     pub content: String,
 }
@@ -307,4 +341,17 @@ pub struct GlobSearchParams {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchResponse {
     pub matches: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct StatParams {
+    pub thread_id: ThreadId,
+    pub turn_id: TurnId,
+    pub path: PathBuf,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct StatResponse {
+    pub exists: bool,
+    pub is_directory: bool,
 }

@@ -25,7 +25,7 @@ impl Agent for TestAgent {
     }
 
     async fn send_message(&self, _request: SendMessageParams) -> Result<SendMessageResponse> {
-        Ok(SendMessageResponse { turn_id: TurnId(0) })
+        Ok(SendMessageResponse)
     }
 
     async fn get_thread_entries(
@@ -45,10 +45,27 @@ impl Client for TestClient {
         Ok(StreamMessageChunkResponse {})
     }
 
-    async fn read_file(&self, _request: ReadFileParams) -> Result<ReadFileResponse> {
-        Ok(ReadFileResponse {
+    async fn stat(&self, _request: StatParams) -> Result<StatResponse> {
+        Ok(StatResponse {
+            exists: false,
+            is_directory: false,
+        })
+    }
+
+    async fn read_text_file(&self, _request: ReadTextFileParams) -> Result<ReadTextFileResponse> {
+        Ok(ReadTextFileResponse {
             version: FileVersion(0),
             content: "the content".into(),
+        })
+    }
+
+    async fn read_binary_file(
+        &self,
+        _request: ReadBinaryFileParams,
+    ) -> Result<ReadBinaryFileResponse> {
+        Ok(ReadBinaryFileResponse {
+            version: FileVersion(0),
+            content: "dGhlIGNvbnRlbnQ=".into(),
         })
     }
 
@@ -84,10 +101,12 @@ async fn test_client_agent_communication() {
             let _task = tokio::spawn(client_io_task);
             let _task = tokio::spawn(agent_io_task);
 
-            let response = agent_connection.request(ReadFileParams {
+            let response = agent_connection.request(ReadTextFileParams {
                 thread_id: ThreadId("0".into()),
                 turn_id: TurnId(0),
                 path: "test.txt".into(),
+                line_limit: None,
+                line_offset: None,
             });
             let response = timeout(Duration::from_secs(2), response)
                 .await
