@@ -7,16 +7,16 @@ use futures::{
     AsyncBufReadExt as _, AsyncRead, AsyncWrite, AsyncWriteExt as _, FutureExt as _,
     StreamExt as _,
     channel::{
-        mpsc::{UnboundedReceiver, UnboundedSender},
+        mpsc::{self, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
-    future::BoxFuture,
+    future::LocalBoxFuture,
     io::BufReader,
     select_biased,
 };
 use parking_lot::Mutex;
 pub use schema::*;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
     collections::HashMap,
     sync::{
@@ -25,27 +25,105 @@ use std::{
     },
 };
 
-pub struct Connection {
-    input_tx: UnboundedSender<Box<str>>,
-    state: Arc<Mutex<ConnectionState>>,
+/// A connection to a separate agent process over the ACP protocol.
+pub struct AgentConnection(Connection<AnyClientRequest, AnyAgentRequest>);
+
+/// A connection to a separate client process over the ACP protocol.
+pub struct ClientConnection(Connection<AnyAgentRequest, AnyClientRequest>);
+
+impl AgentConnection {
+    /// Connect to an agent process, handling any incoming requests
+    /// using the given handler.
+    pub fn connect_to_agent<H: 'static + Client>(
+        handler: H,
+        outgoing_bytes: impl Unpin + AsyncWrite,
+        incoming_bytes: impl Unpin + AsyncRead,
+    ) -> (
+        Self,
+        impl Future<Output = ()>,
+        impl Future<Output = Result<()>>,
+    ) {
+        let handler = Arc::new(handler);
+        let (connection, handler_task, io_task) = Connection::new(
+            Box::new(move |request| {
+                let handler = handler.clone();
+                async move { handler.call(request).await }.boxed_local()
+            }),
+            outgoing_bytes,
+            incoming_bytes,
+        );
+        (Self(connection), handler_task, io_task)
+    }
+
+    /// Send a request to the agent and wait for a response.
+    pub fn request<R: AgentRequest>(&self, params: R) -> impl Future<Output = Result<R::Response>> {
+        let params = params.into_any();
+        let result = self.0.request(params.method_name(), params);
+        async move {
+            let result = result.await?;
+            R::response_from_any(result).ok_or_else(|| anyhow!("wrong response type"))
+        }
+    }
+}
+
+impl ClientConnection {
+    pub fn connect_to_client<H: 'static + Agent>(
+        handler: H,
+        outgoing_bytes: impl Unpin + AsyncWrite,
+        incoming_bytes: impl Unpin + AsyncRead,
+    ) -> (
+        Self,
+        impl Future<Output = ()>,
+        impl Future<Output = Result<()>>,
+    ) {
+        let handler = Arc::new(handler);
+        let (connection, handler_task, io_task) = Connection::new(
+            Box::new(move |request| {
+                let handler = handler.clone();
+                async move { handler.call(request).await }.boxed_local()
+            }),
+            outgoing_bytes,
+            incoming_bytes,
+        );
+        (Self(connection), handler_task, io_task)
+    }
+
+    pub fn request<R: ClientRequest>(
+        &self,
+        params: R,
+    ) -> impl Future<Output = Result<R::Response>> {
+        let params = params.into_any();
+        let result = self.0.request(params.method_name(), params);
+        async move {
+            let result = result.await?;
+            R::response_from_any(result).ok_or_else(|| anyhow!("wrong response type"))
+        }
+    }
+}
+
+struct Connection<In, Out>
+where
+    In: Request,
+    Out: Request,
+{
+    outgoing_tx: UnboundedSender<AnyMessage<Out, In::Response>>,
+    response_senders: ResponseSenders<Out::Response>,
     next_id: AtomicI32,
 }
 
-struct ConnectionState {
-    response_senders: HashMap<i32, oneshot::Sender<Result<Box<str>>>>,
-}
+type ResponseSenders<T> = Arc<Mutex<HashMap<i32, oneshot::Sender<Result<T>>>>>;
 
 #[derive(Deserialize, Serialize)]
 #[serde(untagged)]
-enum AnyMessage {
+enum AnyMessage<Req, Resp> {
     Request {
         id: i32,
         method: Box<str>,
-        params: Box<str>,
+        params: Req,
     },
     OkResponse {
         id: i32,
-        result: Box<str>,
+        result: Resp,
     },
     ErrorResponse {
         id: i32,
@@ -53,186 +131,139 @@ enum AnyMessage {
     },
 }
 
-type RequestHandler =
-    Box<dyn 'static + Send + Fn(Box<str>, Box<str>) -> BoxFuture<'static, Result<Box<str>>>>;
-
-impl Connection {
-    pub fn client_to_agent<C>(
-        client: C,
-        input_bytes: impl Unpin + AsyncWrite,
-        output_bytes: impl Unpin + AsyncRead,
-    ) -> (
-        Self,
-        impl Future<Output = ()>,
-        impl Future<Output = Result<()>>,
-    )
-    where
-        C: 'static + Send + Sync + Client,
-    {
-        let client = Arc::new(client);
-        Self::new(
-            Box::new(move |method, params| {
-                let client = client.clone();
-                async move { client.call(method, params).await }.boxed()
-            }),
-            input_bytes,
-            output_bytes,
-        )
-    }
-
-    pub fn agent_to_client<T>(
-        agent: T,
-        input_bytes: impl Unpin + AsyncWrite,
-        output_bytes: impl Unpin + AsyncRead,
-    ) -> (
-        Self,
-        impl Future<Output = ()>,
-        impl Future<Output = Result<()>>,
-    )
-    where
-        T: 'static + Send + Sync + Agent,
-    {
-        let agent = Arc::new(agent);
-        Self::new(
-            Box::new(move |method, params| {
-                let agent = agent.clone();
-                async move { agent.call(method, params).await }.boxed()
-            }),
-            input_bytes,
-            output_bytes,
-        )
-    }
-
+impl<In, Out> Connection<In, Out>
+where
+    In: Request,
+    Out: Request,
+{
     fn new(
-        request_handler: RequestHandler,
-        input_bytes: impl Unpin + AsyncWrite,
-        output_bytes: impl Unpin + AsyncRead,
+        request_handler: Box<dyn 'static + Fn(In) -> LocalBoxFuture<'static, Result<In::Response>>>,
+        outgoing_bytes: impl Unpin + AsyncWrite,
+        incoming_bytes: impl Unpin + AsyncRead,
     ) -> (
         Self,
         impl Future<Output = ()>,
         impl Future<Output = Result<()>>,
     ) {
-        let state = Arc::new(Mutex::new(ConnectionState {
-            response_senders: Default::default(),
-        }));
-        let (input_tx, input_rx) = futures::channel::mpsc::unbounded();
-        let (output_tx, output_rx) = futures::channel::mpsc::unbounded();
+        let (outgoing_tx, outgoing_rx) = mpsc::unbounded();
+        let (incoming_tx, incoming_rx) = mpsc::unbounded();
         let this = Self {
-            state: state.clone(),
-            input_tx: input_tx.clone(),
+            response_senders: ResponseSenders::default(),
+            outgoing_tx: outgoing_tx.clone(),
             next_id: AtomicI32::new(0),
         };
-        let handle_incoming = handle_incoming(request_handler, state, input_tx, output_rx);
-        let handle_io = handle_io(input_bytes, output_bytes, input_rx, output_tx);
-        (this, handle_incoming, handle_io)
+        let handler_task = Self::handle_incoming(
+            outgoing_tx,
+            incoming_rx,
+            request_handler,
+            this.response_senders.clone(),
+        );
+        let io_task = Self::handle_io(outgoing_rx, incoming_tx, outgoing_bytes, incoming_bytes);
+        (this, handler_task, io_task)
     }
 
-    pub fn request<R: Request>(&self, params: R) -> impl Future<Output = Result<R::Response>> {
-        let id = self.next_id.fetch_add(1, SeqCst);
+    fn request(
+        &self,
+        method: &'static str,
+        params: Out,
+    ) -> impl Future<Output = Result<Out::Response>> {
         let (tx, rx) = oneshot::channel();
-        self.state.lock().response_senders.insert(id, tx);
-        self.input_tx
-            .unbounded_send(
-                serde_json::to_string(&AnyMessage::Request {
-                    id,
-                    method: R::METHOD.into(),
-                    params: serde_json::to_string(&params).unwrap().into(),
-                })
-                .unwrap()
-                .into(),
-            )
+        let id = self.next_id.fetch_add(1, SeqCst);
+        self.response_senders.lock().insert(id, tx);
+        self.outgoing_tx
+            .unbounded_send(AnyMessage::Request {
+                id,
+                method: method.into(),
+                params: params,
+            })
             .ok();
-        async move {
-            let result = rx.await??;
-            Ok(serde_json::from_str(&result)?)
-        }
+        async move { rx.await? }
     }
-}
 
-async fn handle_io(
-    mut input_bytes: impl Unpin + AsyncWrite,
-    output_bytes: impl Unpin + AsyncRead,
-    mut input_rx: UnboundedReceiver<Box<str>>,
-    output_tx: UnboundedSender<Box<str>>,
-) -> Result<()> {
-    let mut output_reader = BufReader::new(output_bytes);
-    let mut chunk = String::new();
-    loop {
-        select_biased! {
-            line = input_rx.next() => {
-                if let Some(line) = line {
-                    input_bytes.write_all(line.as_bytes()).await.ok();
-                    input_bytes.write(b"\n").await.ok();
-                } else {
-                    break;
+    async fn handle_io(
+        mut outgoing_rx: UnboundedReceiver<AnyMessage<Out, In::Response>>,
+        incoming_tx: UnboundedSender<AnyMessage<In, Out::Response>>,
+        mut outgoing_bytes: impl Unpin + AsyncWrite,
+        incoming_bytes: impl Unpin + AsyncRead,
+    ) -> Result<()>
+    where
+        In: Serialize + DeserializeOwned,
+        Out: Serialize + DeserializeOwned,
+    {
+        let mut output_reader = BufReader::new(incoming_bytes);
+        let mut outgoing_line = Vec::new();
+        let mut incoming_line = String::new();
+        loop {
+            select_biased! {
+                message = outgoing_rx.next() => {
+                    if let Some(message) = message {
+                        outgoing_line.clear();
+                        serde_json::to_writer(&mut outgoing_line, &message)?;
+                        log::trace!("send: {}", String::from_utf8_lossy(&outgoing_line));
+                        outgoing_line.push(b'\n');
+                        outgoing_bytes.write_all(&outgoing_line).await.ok();
+                    } else {
+                        break;
+                    }
+                }
+                bytes_read = output_reader.read_line(&mut incoming_line).fuse() => {
+                    if bytes_read? == 0 {
+                        break
+                    }
+                    log::trace!("recv: {}", &incoming_line);
+
+                    if let Ok(message) = serde_json::from_str(&incoming_line) {
+                        if incoming_tx.unbounded_send(message).is_err() {
+                            break
+                        }
+                    }
+                    incoming_line.clear();
                 }
             }
-            bytes_read = output_reader.read_line(&mut chunk).fuse() => {
-                if bytes_read? == 0 {
-                    break
-                }
-                if output_tx.unbounded_send(chunk.into()).is_err() {
-                    break
-                }
-                chunk = String::new();
-            }
         }
+        Ok(())
     }
-    Ok(())
-}
 
-async fn handle_incoming(
-    incoming_handler: RequestHandler,
-    state: Arc<Mutex<ConnectionState>>,
-    input_tx: UnboundedSender<Box<str>>,
-    mut output_rx: UnboundedReceiver<Box<str>>,
-) {
-    while let Some(message) = output_rx.next().await {
-        // todo! move json parsing to background io loop
-        match serde_json::from_str(&message) {
-            Ok(msg) => match msg {
-                AnyMessage::Request { id, method, params } => {
-                    let result = incoming_handler(method, params).await;
+    async fn handle_incoming(
+        outgoing_tx: UnboundedSender<AnyMessage<Out, In::Response>>,
+        mut incoming_rx: UnboundedReceiver<AnyMessage<In, Out::Response>>,
+        incoming_handler: Box<
+            dyn 'static + Fn(In) -> LocalBoxFuture<'static, Result<In::Response>>,
+        >,
+        response_senders: ResponseSenders<Out::Response>,
+    ) {
+        while let Some(message) = incoming_rx.next().await {
+            match message {
+                AnyMessage::Request { id, params, .. } => {
+                    let result = incoming_handler(params).await;
                     match result {
                         Ok(result) => {
-                            input_tx
-                                .unbounded_send(
-                                    serde_json::to_string(&AnyMessage::OkResponse { id, result })
-                                        .unwrap()
-                                        .into(),
-                                )
+                            outgoing_tx
+                                .unbounded_send(AnyMessage::OkResponse { id, result })
                                 .ok();
                         }
                         Err(error) => {
-                            input_tx
-                                .unbounded_send(
-                                    serde_json::to_string(&AnyMessage::ErrorResponse {
-                                        id,
-                                        error: error.to_string(),
-                                    })
-                                    .unwrap()
-                                    .into(),
-                                )
+                            outgoing_tx
+                                .unbounded_send(AnyMessage::ErrorResponse {
+                                    id,
+                                    error: error.to_string(),
+                                })
                                 .ok();
                         }
                     }
                 }
                 AnyMessage::OkResponse { id, result } => {
-                    let state = &mut state.lock();
-                    if let Some(sender) = state.response_senders.remove(&id) {
+                    let sender = response_senders.lock().remove(&id);
+                    if let Some(sender) = sender {
                         sender.send(Ok(result)).ok();
                     }
                 }
                 AnyMessage::ErrorResponse { id, error } => {
-                    let state = &mut state.lock();
-                    if let Some(sender) = state.response_senders.remove(&id) {
+                    let sender = response_senders.lock().remove(&id);
+                    if let Some(sender) = sender {
                         sender.send(Err(anyhow!("{}", error))).ok();
                     }
                 }
-            },
-            Err(err) => {
-                eprintln!("error: {err:?} - {}", message);
-                break;
             }
         }
     }

@@ -184,11 +184,15 @@
         "title": {
           "type": "string"
         },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "id": {
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["id", "title"]
+      "required": ["id", "title", "created_at"]
     }
   }
 }

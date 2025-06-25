@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
@@ -22,25 +22,22 @@ pub struct Method {
 
 macro_rules! acp_peer {
     (
-        $trait_name:ident,
-        $type_name:ident,
-        $result_type_name:ident,
+        $handler_trait_name:ident,
+        $request_trait_name:ident,
+        $request_enum_name:ident,
+        $response_enum_name:ident,
         $method_map_name:ident,
         $(($request_method:ident, $request_name:ident, $response_name:ident)),*
         $(,)?
     ) => {
-        #[async_trait]
-        pub trait $trait_name {
-            /// Call a method on the client by name.
-            async fn call(&self, method_name: Box<str>, params: Box<str>) -> Result<Box<str>> {
-                match method_name.as_ref() {
-                    $(stringify!($request_method) => {
-                        // todo! move json parsing to background io loop
-                        let request = serde_json::from_str::<$request_name>(&params)?;
-                        let response = self.$request_method(request).await?;
-                        Ok(serde_json::to_string(&response)?.into())
+        #[async_trait(?Send)]
+        pub trait $handler_trait_name {
+            async fn call(&self, params: $request_enum_name) -> Result<$response_enum_name> {
+                match params {
+                    $($request_enum_name::$request_name(params) => {
+                        let response = self.$request_method(params).await?;
+                        Ok($response_enum_name::$response_name(response))
                     }),*
-                    _ => Err(anyhow!("method {:?} not found", method_name)),
                 }
             }
 
@@ -49,9 +46,13 @@ macro_rules! acp_peer {
             )*
         }
 
+        pub trait $request_trait_name: Request {
+            fn into_any(self) -> $request_enum_name;
+            fn response_from_any(any: $response_enum_name) -> Option<Self::Response>;
+        }
+
         #[derive(Serialize, Deserialize, JsonSchema)]
-        #[serde(untagged)]
-        pub enum $type_name {
+        pub enum $request_enum_name {
             $(
                 $request_name($request_name),
             )*
@@ -59,16 +60,26 @@ macro_rules! acp_peer {
 
         #[derive(Serialize, Deserialize, JsonSchema)]
         #[serde(untagged)]
-        pub enum $result_type_name {
+        pub enum $response_enum_name {
             $(
                 $response_name($response_name),
             )*
         }
 
-        $(impl Request for $request_name {
-            const METHOD: &'static str = stringify!($request_method);
-            type Response = $response_name;
-        })*
+        impl $request_enum_name {
+            pub fn method_name(&self) -> &'static str {
+                match self {
+                    $(
+                        $request_enum_name::$request_name(_) => stringify!($request_method),
+                    )*
+                }
+            }
+        }
+
+        impl Request for $request_enum_name {
+            const METHOD: &'static str = "";
+            type Response = $response_enum_name;
+        }
 
         pub static $method_map_name: &[Method] = &[
             $(
@@ -79,21 +90,44 @@ macro_rules! acp_peer {
                 },
             )*
         ];
+
+        $(
+            impl $request_trait_name for $request_name {
+                fn into_any(self) -> $request_enum_name {
+                    $request_enum_name::$request_name(self)
+                }
+
+                fn response_from_any(any: $response_enum_name) -> Option<Self::Response> {
+                    match any {
+                        $response_enum_name::$response_name(this) => Some(this),
+                        _ => None
+                    }
+                }
+            }
+
+            impl Request for $request_name {
+                const METHOD: &'static str = stringify!($request_method);
+                type Response = $response_name;
+            }
+        )*
     };
 }
 
 acp_peer!(
     Client,
     ClientRequest,
-    ClientResult,
+    AnyClientRequest,
+    AnyClientResult,
     CLIENT_METHODS,
     (read_file, ReadFileParams, ReadFileResponse),
+    (glob_search, GlobSearchParams, GlobSearchResponse),
 );
 
 acp_peer!(
     Agent,
     AgentRequest,
-    AgentResult,
+    AnyAgentRequest,
+    AnyAgentResult,
     AGENT_METHODS,
     (list_threads, ListThreadsParams, ListThreadsResponse),
     (open_thread, OpenThreadParams, OpenThreadResponse),
@@ -155,4 +189,14 @@ pub struct FileVersion(pub u64);
 pub struct ReadFileResponse {
     pub version: FileVersion,
     pub content: String,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct GlobSearchParams {
+    pub pattern: String,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct GlobSearchResponse {
+    pub matches: Vec<String>,
 }

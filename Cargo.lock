@@ -26,6 +26,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures",
+ "log",
  "parking_lot",
  "schemars",
  "serde",

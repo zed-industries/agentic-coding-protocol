@@ -6,10 +6,10 @@ use std::fs;
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 enum Message {
-    ClientRequest(acp::ClientRequest),
-    ClientResult(acp::ClientResult),
-    AgentRequest(acp::AgentRequest),
-    AgentResult(acp::AgentResult),
+    ClientRequest(acp::AnyClientRequest),
+    ClientResult(acp::AnyClientResult),
+    AgentRequest(acp::AnyAgentRequest),
+    AgentResult(acp::AnyAgentResult),
 }
 
 fn main() {

@@ -46,6 +46,7 @@ export interface ListThreadsResponse {
 }
 export interface ThreadMetadata {
   title: string;
+  created_at: string;
   id: ThreadId;
 }
 export interface OpenThreadResponse {

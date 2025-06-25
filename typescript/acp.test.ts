@@ -33,8 +33,8 @@ describe("Connection", () => {
       async listThreads() {
         return {
           threads: [
-            { id: "thread-1", title: "First Thread" },
-            { id: "thread-2", title: "Second Thread" },
+            { id: "thread-1", title: "First Thread", created_at: "" },
+            { id: "thread-2", title: "Second Thread", created_at: "" },
           ],
         };
       }
@@ -72,8 +72,8 @@ describe("Connection", () => {
     const threads = await agentConnection.listThreads(null);
     expect(threads).toEqual({
       threads: [
-        { id: "thread-1", title: "First Thread" },
-        { id: "thread-2", title: "Second Thread" },
+        { id: "thread-1", title: "First Thread", created_at: "" },
+        { id: "thread-2", title: "Second Thread", created_at: "" },
       ],
     });
 
@@ -149,7 +149,11 @@ describe("Connection", () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
         return {
           threads: [
-            { id: `thread-${callCount}`, title: `Thread ${callCount}` },
+            {
+              id: `thread-${callCount}`,
+              title: `Thread ${callCount}`,
+              created_at: "",
+            },
           ],
         };
       }
