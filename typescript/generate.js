@@ -31,7 +31,7 @@ function requestMapToInterface(name, methods) {
 
   for (const { name, request_type, response_type } of methods) {
     const jsMethodName = toJsMethodName(name);
-    code += `  ${jsMethodName}(params: ${request_type}): Promise<${response_type}>;\n`;
+    code += `  ${jsMethodName}?(params: ${request_type}): Promise<${response_type}>;\n`;
   }
   code += "}\n\n";
 

@@ -3,6 +3,8 @@ import {
   Agent,
   Client,
   Connection,
+  GlobSearchParams,
+  GlobSearchResponse,
   ListThreadsParams,
   ListThreadsResponse,
   OpenThreadParams,
@@ -25,6 +27,11 @@ describe("Connection", () => {
         return {
           content: `Contents of ${path}`,
           version: 1,
+        };
+      }
+      async globSearch(params: GlobSearchParams) {
+        return {
+          matches: [],
         };
       }
     };
@@ -61,7 +68,7 @@ describe("Connection", () => {
       clientToAgent.readable,
     );
 
-    const fileContent = await clientConnection.readFile({
+    const fileContent = await clientConnection.readFile!({
       path: "/test/file.ts",
     });
     expect(fileContent).toEqual({
@@ -69,7 +76,7 @@ describe("Connection", () => {
       version: 1,
     });
 
-    const threads = await agentConnection.listThreads(null);
+    const threads = await agentConnection.listThreads!(null);
     expect(threads).toEqual({
       threads: [
         { id: "thread-1", title: "First Thread", created_at: "" },
@@ -77,7 +84,7 @@ describe("Connection", () => {
       ],
     });
 
-    const threadData = await agentConnection.openThread({
+    const threadData = await agentConnection.openThread!({
       thread_id: "thread-1",
     });
     expect(threadData).toEqual({
@@ -121,11 +128,11 @@ describe("Connection", () => {
 
     // Test error handling in client->agent direction
     await expect(
-      clientConnection.readFile({ path: "/missing.ts" }),
+      clientConnection.readFile!({ path: "/missing.ts" }),
     ).rejects.toThrow();
 
     // Test error handling in agent->client direction
-    await expect(agentConnection.listThreads(null)).rejects.toThrow();
+    await expect(agentConnection.listThreads!(null)).rejects.toThrow();
   });
 
   it("handles concurrent requests", async () => {
@@ -179,11 +186,11 @@ describe("Connection", () => {
 
     // Send multiple concurrent requests
     const promises = [
-      clientConnection.readFile({ path: "/file1.ts" }),
-      clientConnection.readFile({ path: "/file2.ts" }),
-      agentConnection.listThreads(null),
-      agentConnection.openThread({ thread_id: "test-thread" }),
-      agentConnection.listThreads(null),
+      clientConnection.readFile!({ path: "/file1.ts" }),
+      clientConnection.readFile!({ path: "/file2.ts" }),
+      agentConnection.listThreads!(null),
+      agentConnection.openThread!({ thread_id: "test-thread" }),
+      agentConnection.listThreads!(null),
     ];
 
     const results = await Promise.all(promises);
@@ -240,10 +247,10 @@ describe("Connection", () => {
     );
 
     // Send requests in specific order
-    await clientConnection.readFile({ path: "/first.ts" });
-    await agentConnection.listThreads(null);
-    await clientConnection.readFile({ path: "/second.ts" });
-    await agentConnection.openThread({ thread_id: "thread-x" });
+    await clientConnection.readFile!({ path: "/first.ts" });
+    await agentConnection.listThreads!(null);
+    await clientConnection.readFile!({ path: "/second.ts" });
+    await agentConnection.openThread!({ thread_id: "thread-x" });
 
     // Verify order
     expect(messageLog).toEqual([

@@ -16,7 +16,8 @@ use futures::{
 };
 use parking_lot::Mutex;
 pub use schema::*;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use std::{
     collections::HashMap,
     sync::{
@@ -103,19 +104,32 @@ impl ClientConnection {
 
 struct Connection<In, Out>
 where
-    In: Request,
-    Out: Request,
+    In: AnyRequest,
+    Out: AnyRequest,
 {
-    outgoing_tx: UnboundedSender<AnyMessage<Out, In::Response>>,
+    outgoing_tx: UnboundedSender<OutgoingMessage<Out, In::Response>>,
     response_senders: ResponseSenders<Out::Response>,
     next_id: AtomicI32,
 }
 
-type ResponseSenders<T> = Arc<Mutex<HashMap<i32, oneshot::Sender<Result<T>>>>>;
+type ResponseSenders<T> = Arc<Mutex<HashMap<i32, (&'static str, oneshot::Sender<Result<T>>)>>>;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
+struct IncomingMessage<'a> {
+    id: i32,
+    #[serde(default)]
+    method: Option<&'a str>,
+    #[serde(default)]
+    params: Option<&'a RawValue>,
+    #[serde(default)]
+    result: Option<&'a RawValue>,
+    #[serde(default)]
+    error: Option<&'a str>,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
-enum AnyMessage<Req, Resp> {
+enum OutgoingMessage<Req, Resp> {
     Request {
         id: i32,
         method: Box<str>,
@@ -133,8 +147,8 @@ enum AnyMessage<Req, Resp> {
 
 impl<In, Out> Connection<In, Out>
 where
-    In: Request,
-    Out: Request,
+    In: AnyRequest,
+    Out: AnyRequest,
 {
     fn new(
         request_handler: Box<dyn 'static + Fn(In) -> LocalBoxFuture<'static, Result<In::Response>>>,
@@ -152,13 +166,14 @@ where
             outgoing_tx: outgoing_tx.clone(),
             next_id: AtomicI32::new(0),
         };
-        let handler_task = Self::handle_incoming(
-            outgoing_tx,
-            incoming_rx,
-            request_handler,
+        let handler_task = Self::handle_incoming(outgoing_tx, incoming_rx, request_handler);
+        let io_task = Self::handle_io(
+            outgoing_rx,
+            incoming_tx,
             this.response_senders.clone(),
+            outgoing_bytes,
+            incoming_bytes,
         );
-        let io_task = Self::handle_io(outgoing_rx, incoming_tx, outgoing_bytes, incoming_bytes);
         (this, handler_task, io_task)
     }
 
@@ -169,9 +184,9 @@ where
     ) -> impl Future<Output = Result<Out::Response>> {
         let (tx, rx) = oneshot::channel();
         let id = self.next_id.fetch_add(1, SeqCst);
-        self.response_senders.lock().insert(id, tx);
+        self.response_senders.lock().insert(id, (method, tx));
         self.outgoing_tx
-            .unbounded_send(AnyMessage::Request {
+            .unbounded_send(OutgoingMessage::Request {
                 id,
                 method: method.into(),
                 params: params,
@@ -181,15 +196,12 @@ where
     }
 
     async fn handle_io(
-        mut outgoing_rx: UnboundedReceiver<AnyMessage<Out, In::Response>>,
-        incoming_tx: UnboundedSender<AnyMessage<In, Out::Response>>,
+        mut outgoing_rx: UnboundedReceiver<OutgoingMessage<Out, In::Response>>,
+        incoming_tx: UnboundedSender<(i32, In)>,
+        response_senders: ResponseSenders<Out::Response>,
         mut outgoing_bytes: impl Unpin + AsyncWrite,
         incoming_bytes: impl Unpin + AsyncRead,
-    ) -> Result<()>
-    where
-        In: Serialize + DeserializeOwned,
-        Out: Serialize + DeserializeOwned,
-    {
+    ) -> Result<()> {
         let mut output_reader = BufReader::new(incoming_bytes);
         let mut outgoing_line = Vec::new();
         let mut incoming_line = String::new();
@@ -211,10 +223,36 @@ where
                         break
                     }
                     log::trace!("recv: {}", &incoming_line);
-
-                    if let Ok(message) = serde_json::from_str(&incoming_line) {
-                        if incoming_tx.unbounded_send(message).is_err() {
-                            break
+                    match serde_json::from_str::<IncomingMessage>(&incoming_line) {
+                        Ok(message) => {
+                            if let Some(method) = message.method {
+                                match In::from_method_and_params(method, message.params.unwrap_or(RawValue::NULL)) {
+                                    Ok(params) => {
+                                        incoming_tx.unbounded_send((message.id, params)).ok();
+                                    }
+                                    Err(error) => {
+                                        log::error!("failed to parse incoming {method} message params: {}", error);
+                                    }
+                                }
+                            } else if let Some(error) = message.error {
+                                if let Some((_, tx)) = response_senders.lock().remove(&message.id) {
+                                    tx.send(Err(anyhow!("{}", error))).ok();
+                                }
+                            } else if let Some(result) = message.result {
+                                if let Some((method, tx)) = response_senders.lock().remove(&message.id) {
+                                    match Out::response_from_method_and_result(&method, result) {
+                                        Ok(result) => {
+                                            tx.send(Ok(result)).ok();
+                                        }
+                                        Err(error) => {
+                                            log::error!("failed to parse {method} message result: {}", error);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Err(error) => {
+                            log::error!("failed to parse incoming message: {}", error);
                         }
                     }
                     incoming_line.clear();
@@ -225,44 +263,27 @@ where
     }
 
     async fn handle_incoming(
-        outgoing_tx: UnboundedSender<AnyMessage<Out, In::Response>>,
-        mut incoming_rx: UnboundedReceiver<AnyMessage<In, Out::Response>>,
+        outgoing_tx: UnboundedSender<OutgoingMessage<Out, In::Response>>,
+        mut incoming_rx: UnboundedReceiver<(i32, In)>,
         incoming_handler: Box<
             dyn 'static + Fn(In) -> LocalBoxFuture<'static, Result<In::Response>>,
         >,
-        response_senders: ResponseSenders<Out::Response>,
     ) {
-        while let Some(message) = incoming_rx.next().await {
-            match message {
-                AnyMessage::Request { id, params, .. } => {
-                    let result = incoming_handler(params).await;
-                    match result {
-                        Ok(result) => {
-                            outgoing_tx
-                                .unbounded_send(AnyMessage::OkResponse { id, result })
-                                .ok();
-                        }
-                        Err(error) => {
-                            outgoing_tx
-                                .unbounded_send(AnyMessage::ErrorResponse {
-                                    id,
-                                    error: error.to_string(),
-                                })
-                                .ok();
-                        }
-                    }
+        while let Some((id, params)) = incoming_rx.next().await {
+            let result = incoming_handler(params).await;
+            match result {
+                Ok(result) => {
+                    outgoing_tx
+                        .unbounded_send(OutgoingMessage::OkResponse { id, result })
+                        .ok();
                 }
-                AnyMessage::OkResponse { id, result } => {
-                    let sender = response_senders.lock().remove(&id);
-                    if let Some(sender) = sender {
-                        sender.send(Ok(result)).ok();
-                    }
-                }
-                AnyMessage::ErrorResponse { id, error } => {
-                    let sender = response_senders.lock().remove(&id);
-                    if let Some(sender) = sender {
-                        sender.send(Err(anyhow!("{}", error))).ok();
-                    }
+                Err(error) => {
+                    outgoing_tx
+                        .unbounded_send(OutgoingMessage::ErrorResponse {
+                            id,
+                            error: error.to_string(),
+                        })
+                        .ok();
                 }
             }
         }

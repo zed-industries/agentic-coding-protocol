@@ -1,15 +1,15 @@
 export type AgentCodingProtocol =
-  | ClientRequest
-  | ClientResult
-  | AgentRequest
-  | AgentResult;
-export type ClientRequest = ReadFileParams;
-export type ClientResult = ReadFileResponse;
+  | AnyClientRequest
+  | AnyClientResult
+  | AnyAgentRequest
+  | AnyAgentResult;
+export type AnyClientRequest = ReadFileParams | GlobSearchParams;
+export type AnyClientResult = ReadFileResponse | GlobSearchResponse;
 export type FileVersion = number;
-export type AgentRequest = ListThreadsParams | OpenThreadParams;
+export type AnyAgentRequest = ListThreadsParams | OpenThreadParams;
 export type ListThreadsParams = null;
 export type ThreadId = string;
-export type AgentResult = ListThreadsResponse | OpenThreadResponse;
+export type AnyAgentResult = ListThreadsResponse | OpenThreadResponse;
 export type ThreadEvent =
   | {
       UserMessage: MessageSegment[];
@@ -34,9 +34,15 @@ export type MessageSegment =
 export interface ReadFileParams {
   path: string;
 }
+export interface GlobSearchParams {
+  pattern: string;
+}
 export interface ReadFileResponse {
   content: string;
   version: FileVersion;
+}
+export interface GlobSearchResponse {
+  matches: string[];
 }
 export interface OpenThreadParams {
   thread_id: ThreadId;
@@ -54,16 +60,18 @@ export interface OpenThreadResponse {
 }
 
 export interface Client {
-  readFile(params: ReadFileParams): Promise<ReadFileResponse>;
+  readFile?(params: ReadFileParams): Promise<ReadFileResponse>;
+  globSearch?(params: GlobSearchParams): Promise<GlobSearchResponse>;
 }
 
 export const CLIENT_METHODS = {
   read_file: "readFile",
+  glob_search: "globSearch",
 } as const;
 
 export interface Agent {
-  listThreads(params: ListThreadsParams): Promise<ListThreadsResponse>;
-  openThread(params: OpenThreadParams): Promise<OpenThreadResponse>;
+  listThreads?(params: ListThreadsParams): Promise<ListThreadsResponse>;
+  openThread?(params: OpenThreadParams): Promise<OpenThreadResponse>;
 }
 
 export const AGENT_METHODS = {

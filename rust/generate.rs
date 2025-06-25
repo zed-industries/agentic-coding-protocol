@@ -1,9 +1,9 @@
 use agentic_coding_protocol as acp;
 use schemars::{JsonSchema, generate::SchemaSettings};
-use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[allow(dead_code)]
+#[derive(JsonSchema)]
 #[serde(untagged)]
 enum Message {
     ClientRequest(acp::AnyClientRequest),

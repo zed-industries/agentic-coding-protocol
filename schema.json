@@ -2,20 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "anyOf": [
     {
-      "$ref": "#/$defs/ClientRequest"
+      "$ref": "#/$defs/AnyClientRequest"
     },
     {
-      "$ref": "#/$defs/ClientResult"
+      "$ref": "#/$defs/AnyClientResult"
     },
     {
-      "$ref": "#/$defs/AgentRequest"
+      "$ref": "#/$defs/AnyAgentRequest"
     },
     {
-      "$ref": "#/$defs/AgentResult"
+      "$ref": "#/$defs/AnyAgentResult"
     }
   ],
   "$defs": {
-    "AgentRequest": {
+    "AnyAgentRequest": {
       "anyOf": [
         {
           "$ref": "#/$defs/ListThreadsParams"
@@ -25,7 +25,7 @@
         }
       ]
     },
-    "AgentResult": {
+    "AnyAgentResult": {
       "anyOf": [
         {
           "$ref": "#/$defs/ListThreadsResponse"
@@ -35,17 +35,23 @@
         }
       ]
     },
-    "ClientRequest": {
+    "AnyClientRequest": {
       "anyOf": [
         {
           "$ref": "#/$defs/ReadFileParams"
+        },
+        {
+          "$ref": "#/$defs/GlobSearchParams"
         }
       ]
     },
-    "ClientResult": {
+    "AnyClientResult": {
       "anyOf": [
         {
           "$ref": "#/$defs/ReadFileResponse"
+        },
+        {
+          "$ref": "#/$defs/GlobSearchResponse"
         }
       ]
     },
@@ -53,6 +59,27 @@
       "type": "integer",
       "format": "uint64",
       "minimum": 0
+    },
+    "GlobSearchParams": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "type": "string"
+        }
+      },
+      "required": ["pattern"]
+    },
+    "GlobSearchResponse": {
+      "type": "object",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["matches"]
     },
     "ListThreadsParams": {
       "type": "null"

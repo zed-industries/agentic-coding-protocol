@@ -1,23 +1,21 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-
-pub trait Request: Serialize + DeserializeOwned {
-    const METHOD: &'static str;
-    type Response: Serialize + DeserializeOwned;
-}
-
-pub trait Notification: Serialize + DeserializeOwned {
-    const METHOD: &'static str;
-}
+use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 
 #[derive(Serialize)]
 pub struct Method {
     pub name: &'static str,
     pub request_type: &'static str,
     pub response_type: &'static str,
+}
+
+pub trait AnyRequest: Serialize + Sized {
+    type Response: Serialize;
+    fn from_method_and_params(method: &str, params: &RawValue) -> Result<Self>;
+    fn response_from_method_and_result(method: &str, params: &RawValue) -> Result<Self::Response>;
 }
 
 macro_rules! acp_peer {
@@ -46,12 +44,14 @@ macro_rules! acp_peer {
             )*
         }
 
-        pub trait $request_trait_name: Request {
+        pub trait $request_trait_name {
+            type Response;
             fn into_any(self) -> $request_enum_name;
             fn response_from_any(any: $response_enum_name) -> Option<Self::Response>;
         }
 
-        #[derive(Serialize, Deserialize, JsonSchema)]
+        #[derive(Serialize, JsonSchema)]
+        #[serde(untagged)]
         pub enum $request_enum_name {
             $(
                 $request_name($request_name),
@@ -66,6 +66,38 @@ macro_rules! acp_peer {
             )*
         }
 
+        impl AnyRequest for $request_enum_name {
+            type Response = $response_enum_name;
+
+            fn from_method_and_params(method: &str, params: &RawValue) -> Result<Self> {
+                match method {
+                    $(
+                        stringify!($request_method) => {
+                            match serde_json::from_str(params.get()) {
+                                Ok(params) => Ok($request_enum_name::$request_name(params)),
+                                Err(e) => Err(anyhow!(e.to_string())),
+                            }
+                        }
+                    )*
+                    _ => Err(anyhow!("invalid method string {}", method)),
+                }
+            }
+
+            fn response_from_method_and_result(method: &str, params: &RawValue) -> Result<Self::Response> {
+                match method {
+                    $(
+                        stringify!($request_method) => {
+                            match serde_json::from_str(params.get()) {
+                                Ok(params) => Ok($response_enum_name::$response_name(params)),
+                                Err(e) => Err(anyhow!(e.to_string())),
+                            }
+                        }
+                    )*
+                    _ => Err(anyhow!("invalid method string {}", method)),
+                }
+            }
+        }
+
         impl $request_enum_name {
             pub fn method_name(&self) -> &'static str {
                 match self {
@@ -74,11 +106,6 @@ macro_rules! acp_peer {
                     )*
                 }
             }
-        }
-
-        impl Request for $request_enum_name {
-            const METHOD: &'static str = "";
-            type Response = $response_enum_name;
         }
 
         pub static $method_map_name: &[Method] = &[
@@ -93,6 +120,8 @@ macro_rules! acp_peer {
 
         $(
             impl $request_trait_name for $request_name {
+                type Response = $response_name;
+
                 fn into_any(self) -> $request_enum_name {
                     $request_enum_name::$request_name(self)
                 }
@@ -103,11 +132,6 @@ macro_rules! acp_peer {
                         _ => None
                     }
                 }
-            }
-
-            impl Request for $request_name {
-                const METHOD: &'static str = stringify!($request_method);
-                type Response = $response_name;
             }
         )*
     };
@@ -133,41 +157,41 @@ acp_peer!(
     (open_thread, OpenThreadParams, OpenThreadResponse),
 );
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ListThreadsParams;
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ListThreadsResponse {
     pub threads: Vec<ThreadMetadata>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ThreadMetadata {
     pub id: ThreadId,
     pub title: String,
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct OpenThreadParams {
     pub thread_id: ThreadId,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct OpenThreadResponse {
     pub events: Vec<ThreadEvent>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ThreadId(pub String);
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub enum ThreadEvent {
     UserMessage(Vec<MessageSegment>),
     AgentMessage(Vec<MessageSegment>),
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub enum MessageSegment {
     Text(String),
     Image {
@@ -177,26 +201,26 @@ pub enum MessageSegment {
     },
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadFileParams {
     pub path: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct FileVersion(pub u64);
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadFileResponse {
     pub version: FileVersion,
     pub content: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchParams {
     pub pattern: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchResponse {
     pub matches: Vec<String>,
 }

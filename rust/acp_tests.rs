@@ -35,6 +35,8 @@ impl Client for TestClient {
 
 #[tokio::test]
 async fn test_client_agent_communication() {
+    env_logger::init();
+
     let local = LocalSet::new();
     local
         .run_until(async move {
