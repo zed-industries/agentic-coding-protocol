@@ -4,15 +4,21 @@ export type AgentCodingProtocol =
   | AnyAgentRequest
   | AnyAgentResult;
 export type AnyClientRequest =
+  | StreamMessageChunkParams
   | ReadFileParams
   | GlobSearchParams
   | EndTurnParams;
+export type MessageChunk = {
+  type: "text";
+  chunk: string;
+};
 export type ThreadId = string;
-export type TurnId = number;
 export type AnyClientResult =
+  | StreamMessageChunkResponse
   | ReadFileResponse
   | GlobSearchResponse
   | EndTurnResponse;
+export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
 export type EndTurnResponse = null;
 export type AnyAgentRequest =
@@ -23,10 +29,6 @@ export type AnyAgentRequest =
   | SendMessageParams;
 export type GetThreadsParams = null;
 export type CreateThreadParams = null;
-export type MessageChunk = {
-  type: "text";
-  chunk: string;
-};
 export type Role = "user" | "assistant";
 export type AnyAgentResult =
   | GetThreadsResponse
@@ -46,20 +48,22 @@ export type ThreadEntry =
       content: string;
       path: string;
     };
+export type SendMessageResponse = null;
 
+export interface StreamMessageChunkParams {
+  chunk: MessageChunk;
+  thread_id: ThreadId;
+}
 export interface ReadFileParams {
   path: string;
   thread_id: ThreadId;
-  turn_id: TurnId;
 }
 export interface GlobSearchParams {
   pattern: string;
   thread_id: ThreadId;
-  turn_id: TurnId;
 }
 export interface EndTurnParams {
   thread_id: ThreadId;
-  turn_id: TurnId;
 }
 export interface ReadFileResponse {
   content: string;
@@ -96,17 +100,18 @@ export interface CreateThreadResponse {
 export interface GetThreadEntriesResponse {
   entries: ThreadEntry[];
 }
-export interface SendMessageResponse {
-  turn_id: TurnId;
-}
 
 export interface Client {
+  streamMessageChunk?(
+    params: StreamMessageChunkParams,
+  ): Promise<StreamMessageChunkResponse>;
   readFile?(params: ReadFileParams): Promise<ReadFileResponse>;
   globSearch?(params: GlobSearchParams): Promise<GlobSearchResponse>;
   endTurn?(params: EndTurnParams): Promise<EndTurnResponse>;
 }
 
 export const CLIENT_METHODS = {
+  stream_message_chunk: "streamMessageChunk",
   read_file: "readFile",
   glob_search: "globSearch",
   end_turn: "endTurn",

@@ -145,6 +145,11 @@ acp_peer!(
     AnyClientRequest,
     AnyClientResult,
     CLIENT_METHODS,
+    (
+        stream_message_chunk,
+        StreamMessageChunkParams,
+        StreamMessageChunkResponse
+    ),
     (read_file, ReadFileParams, ReadFileResponse),
     (glob_search, GlobSearchParams, GlobSearchResponse),
     (end_turn, EndTurnParams, EndTurnResponse),
@@ -240,11 +245,8 @@ pub struct OpenThreadParams {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct OpenThreadResponse;
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
 pub struct ThreadId(pub String);
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TurnId(pub u64);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SendMessageParams {
@@ -253,28 +255,33 @@ pub struct SendMessageParams {
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct SendMessageResponse {
-    pub turn_id: TurnId,
-}
+pub struct SendMessageResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EndTurnParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EndTurnResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct ReadFileParams {
+pub struct FileVersion(pub u64);
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct StreamMessageChunkParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
-    pub path: PathBuf,
+    pub chunk: MessageChunk,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct FileVersion(pub u64);
+pub struct StreamMessageChunkResponse;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ReadFileParams {
+    pub thread_id: ThreadId,
+    pub path: PathBuf,
+}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadFileResponse {
@@ -285,7 +292,6 @@ pub struct ReadFileResponse {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub pattern: String,
 }
 

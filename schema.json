@@ -56,6 +56,9 @@
     "AnyClientRequest": {
       "anyOf": [
         {
+          "$ref": "#/$defs/StreamMessageChunkParams"
+        },
+        {
           "$ref": "#/$defs/ReadFileParams"
         },
         {
@@ -68,6 +71,9 @@
     },
     "AnyClientResult": {
       "anyOf": [
+        {
+          "$ref": "#/$defs/StreamMessageChunkResponse"
+        },
         {
           "$ref": "#/$defs/ReadFileResponse"
         },
@@ -96,12 +102,9 @@
       "properties": {
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
-        },
-        "turn_id": {
-          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "turn_id"]
+      "required": ["thread_id"]
     },
     "EndTurnResponse": {
       "type": "null"
@@ -155,12 +158,9 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
-        },
-        "turn_id": {
-          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "turn_id", "pattern"]
+      "required": ["thread_id", "pattern"]
     },
     "GlobSearchResponse": {
       "type": "object",
@@ -226,12 +226,9 @@
         },
         "thread_id": {
           "$ref": "#/$defs/ThreadId"
-        },
-        "turn_id": {
-          "$ref": "#/$defs/TurnId"
         }
       },
-      "required": ["thread_id", "turn_id", "path"]
+      "required": ["thread_id", "path"]
     },
     "ReadFileResponse": {
       "type": "object",
@@ -262,13 +259,22 @@
       "required": ["thread_id", "message"]
     },
     "SendMessageResponse": {
+      "type": "null"
+    },
+    "StreamMessageChunkParams": {
       "type": "object",
       "properties": {
-        "turn_id": {
-          "$ref": "#/$defs/TurnId"
+        "chunk": {
+          "$ref": "#/$defs/MessageChunk"
+        },
+        "thread_id": {
+          "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["turn_id"]
+      "required": ["thread_id", "chunk"]
+    },
+    "StreamMessageChunkResponse": {
+      "type": "null"
     },
     "ThreadEntry": {
       "oneOf": [
@@ -327,11 +333,6 @@
         }
       },
       "required": ["id", "title", "modified_at"]
-    },
-    "TurnId": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0
     }
   }
 }

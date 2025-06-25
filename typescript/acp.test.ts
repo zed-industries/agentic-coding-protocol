@@ -58,7 +58,6 @@ describe("Connection", () => {
 
     const fileContent = await clientConnection.readFile!({
       thread_id: "thread-1",
-      turn_id: 0,
       path: "/test/file.ts",
     });
     expect(fileContent).toEqual({
@@ -115,7 +114,6 @@ describe("Connection", () => {
     await expect(
       clientConnection.readFile!({
         thread_id: "thread-1",
-        turn_id: 0,
         path: "/missing.ts",
       }),
     ).rejects.toThrow();
@@ -175,12 +173,10 @@ describe("Connection", () => {
     const promises = [
       clientConnection.readFile!({
         thread_id: "test-thread",
-        turn_id: 0,
         path: "/file1.ts",
       }),
       clientConnection.readFile!({
         thread_id: "test-thread",
-        turn_id: 0,
         path: "/file2.ts",
       }),
       agentConnection.getThreads!(null),
@@ -244,13 +240,11 @@ describe("Connection", () => {
     // Send requests in specific order
     await clientConnection.readFile!({
       thread_id: "thread-x",
-      turn_id: 0,
       path: "/first.ts",
     });
     await agentConnection.getThreads!(null);
     await clientConnection.readFile!({
       thread_id: "thread-x",
-      turn_id: 0,
       path: "/second.ts",
     });
     await agentConnection.openThread!({ thread_id: "thread-x" });
