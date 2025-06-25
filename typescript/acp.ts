@@ -136,7 +136,7 @@ export class Connection<D, P> {
       typeof this.#delegate[methodName] !== "function"
     ) {
       return {
-        error: { code: 404, message: "Method Not Found" },
+        error: { code: -32601, message: `Method not found - '${method}'` },
       };
     }
 
@@ -144,7 +144,7 @@ export class Connection<D, P> {
       const result = await this.#delegate[methodName](params);
       return { result };
     } catch (error: unknown) {
-      let code = 500;
+      let code = -32603;
       let errMessage = "Unknown Error";
 
       if (error && typeof error === "object") {

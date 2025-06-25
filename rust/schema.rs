@@ -104,7 +104,7 @@ macro_rules! acp_peer {
             pub fn method_name(&self) -> &'static str {
                 match self {
                     $(
-                        $request_enum_name::$request_name(_) => stringify!($request_method),
+                        $request_enum_name::$request_name(_) => $request_method_string,
                     )*
                 }
             }

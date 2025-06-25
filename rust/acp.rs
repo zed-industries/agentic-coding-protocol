@@ -117,14 +117,10 @@ type ResponseSenders<T> = Arc<Mutex<HashMap<i32, (&'static str, oneshot::Sender<
 #[derive(Debug, Deserialize)]
 struct IncomingMessage<'a> {
     id: i32,
-    #[serde(default)]
     method: Option<&'a str>,
-    #[serde(default)]
     params: Option<&'a RawValue>,
-    #[serde(default)]
     result: Option<&'a RawValue>,
-    #[serde(default)]
-    error: Option<&'a str>,
+    error: Option<Error>,
 }
 
 #[derive(Serialize)]
@@ -141,8 +137,14 @@ enum OutgoingMessage<Req, Resp> {
     },
     ErrorResponse {
         id: i32,
-        error: String,
+        error: Error,
     },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Error {
+    code: i32,
+    message: String,
 }
 
 impl<In, Out> Connection<In, Out>
@@ -236,9 +238,10 @@ where
                                 }
                             } else if let Some(error) = message.error {
                                 if let Some((_, tx)) = response_senders.lock().remove(&message.id) {
-                                    tx.send(Err(anyhow!("{}", error))).ok();
+                                    tx.send(Err(anyhow!("code: {}, message: {}", error.code, error.message))).ok();
                                 }
-                            } else if let Some(result) = message.result {
+                            } else {
+                                let result = message.result.unwrap_or(RawValue::NULL);
                                 if let Some((method, tx)) = response_senders.lock().remove(&message.id) {
                                     match Out::response_from_method_and_result(method, result) {
                                         Ok(result) => {
@@ -248,6 +251,8 @@ where
                                             log::error!("failed to parse {method} message result: {}. Raw: {}", error, result);
                                         }
                                     }
+                                } else {
+                                    dbg!(&message.id, response_senders.lock().keys().collect::<Vec<_>>());
                                 }
                             }
                         }
@@ -281,7 +286,10 @@ where
                     outgoing_tx
                         .unbounded_send(OutgoingMessage::ErrorResponse {
                             id,
-                            error: error.to_string(),
+                            error: Error {
+                                code: -32603,
+                                message: error.to_string(),
+                            },
                         })
                         .ok();
                 }
