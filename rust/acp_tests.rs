@@ -103,7 +103,6 @@ async fn test_client_agent_communication() {
 
             let response = agent_connection.request(ReadTextFileParams {
                 thread_id: ThreadId("0".into()),
-                turn_id: TurnId(0),
                 path: "test.txt".into(),
                 line_limit: None,
                 line_offset: None,

@@ -254,21 +254,9 @@ pub struct OpenThreadResponse;
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
 pub struct ThreadId(pub String);
 
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TurnId(pub u64);
-
-impl TurnId {
-    pub fn post_inc(&mut self) -> TurnId {
-        let id = *self;
-        self.0 += 1;
-        id
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct SendMessageParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub message: Message,
 }
 
@@ -278,7 +266,6 @@ pub struct SendMessageResponse;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct EndTurnParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -290,7 +277,6 @@ pub struct FileVersion(pub u64);
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StreamMessageChunkParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub chunk: MessageChunk,
 }
 
@@ -300,7 +286,6 @@ pub struct StreamMessageChunkResponse;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadTextFileParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub path: PathBuf,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub line_offset: Option<u32>,
@@ -311,7 +296,6 @@ pub struct ReadTextFileParams {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ReadBinaryFileParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub path: PathBuf,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub byte_offset: Option<u64>,
@@ -334,7 +318,6 @@ pub struct ReadBinaryFileResponse {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct GlobSearchParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub pattern: String,
 }
 
@@ -346,7 +329,6 @@ pub struct GlobSearchResponse {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StatParams {
     pub thread_id: ThreadId,
-    pub turn_id: TurnId,
     pub path: PathBuf,
 }
 
