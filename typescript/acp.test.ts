@@ -17,6 +17,8 @@ import {
   ReadBinaryFileResponse,
   ReadTextFileParams,
   ReadTextFileResponse,
+  RequestToolCallParams,
+  RequestToolCallResponse,
   SendMessageParams,
   SendMessageResponse,
   StatParams,
@@ -312,6 +314,9 @@ class StubClient implements Client {
     throw new Error("Method not implemented.");
   }
   globSearch(_: GlobSearchParams): Promise<GlobSearchResponse> {
+    throw new Error("Method not implemented.");
+  }
+  requestToolCall(_: RequestToolCallParams): Promise<RequestToolCallResponse> {
     throw new Error("Method not implemented.");
   }
 }

@@ -158,6 +158,12 @@ acp_peer!(
         ReadTextFileResponse
     ),
     (
+        request_tool_call,
+        "requestToolCall",
+        RequestToolCallParams,
+        RequestToolCallResponse
+    ),
+    (
         read_binary_file,
         "readBinaryFile",
         ReadBinaryFileParams,
@@ -207,7 +213,7 @@ acp_peer!(
         "sendMessage",
         SendMessageParams,
         SendMessageResponse
-    ),
+    )
 );
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -258,7 +264,7 @@ pub enum MessageChunk {
     Text { chunk: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Role {
     User,
@@ -385,3 +391,22 @@ pub struct StatResponse {
     pub exists: bool,
     pub is_directory: bool,
 }
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestToolCallParams {
+    pub thread_id: ThreadId,
+    pub tool_name: String,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum RequestToolCallResponse {
+    Allowed { id: ToolCallId },
+    Rejected,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolCallId(pub u64);

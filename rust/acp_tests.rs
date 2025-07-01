@@ -45,13 +45,6 @@ impl Client for TestClient {
         Ok(StreamMessageChunkResponse {})
     }
 
-    async fn stat(&self, _request: StatParams) -> Result<StatResponse> {
-        Ok(StatResponse {
-            exists: false,
-            is_directory: false,
-        })
-    }
-
     async fn read_text_file(&self, _request: ReadTextFileParams) -> Result<ReadTextFileResponse> {
         Ok(ReadTextFileResponse {
             version: FileVersion(0),
@@ -69,8 +62,22 @@ impl Client for TestClient {
         })
     }
 
+    async fn stat(&self, _request: StatParams) -> Result<StatResponse> {
+        Ok(StatResponse {
+            exists: false,
+            is_directory: false,
+        })
+    }
+
     async fn glob_search(&self, _request: GlobSearchParams) -> Result<GlobSearchResponse> {
         Ok(GlobSearchResponse { matches: vec![] })
+    }
+
+    async fn request_tool_call(
+        &self,
+        _request: RequestToolCallParams,
+    ) -> Result<RequestToolCallResponse> {
+        Ok(RequestToolCallResponse::Allowed { id: ToolCallId(0) })
     }
 }
 

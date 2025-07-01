@@ -6,6 +6,7 @@ export type AgentCodingProtocol =
 export type AnyClientRequest =
   | StreamMessageChunkParams
   | ReadTextFileParams
+  | RequestToolCallParams
   | ReadBinaryFileParams
   | StatParams
   | GlobSearchParams;
@@ -17,11 +18,21 @@ export type ThreadId = string;
 export type AnyClientResult =
   | StreamMessageChunkResponse
   | ReadTextFileResponse
+  | RequestToolCallResponse
   | ReadBinaryFileResponse
   | StatResponse
   | GlobSearchResponse;
 export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
+export type RequestToolCallResponse =
+  | {
+      type: "allowed";
+      id: ToolCallId;
+    }
+  | {
+      type: "rejected";
+    };
+export type ToolCallId = number;
 export type AnyAgentRequest =
   | GetThreadsParams
   | CreateThreadParams
@@ -60,6 +71,11 @@ export interface ReadTextFileParams {
   lineOffset?: number | null;
   path: string;
   threadId: ThreadId;
+}
+export interface RequestToolCallParams {
+  description: string;
+  threadId: ThreadId;
+  toolName: string;
 }
 export interface ReadBinaryFileParams {
   byteLimit?: number | null;
@@ -124,6 +140,9 @@ export interface Client {
     params: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse>;
   readTextFile(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
+  requestToolCall(
+    params: RequestToolCallParams,
+  ): Promise<RequestToolCallResponse>;
   readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
   stat(params: StatParams): Promise<StatResponse>;
   globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
@@ -132,6 +151,7 @@ export interface Client {
 export const CLIENT_METHODS = new Set([
   "streamMessageChunk",
   "readTextFile",
+  "requestToolCall",
   "readBinaryFile",
   "stat",
   "globSearch",
