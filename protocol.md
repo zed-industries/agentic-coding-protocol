@@ -19,8 +19,9 @@ A request is a call to a method on the remote peer.
 - `params`: A structured value holding the parameters for the method.
 
 Example Request:
+
 ```json
-{"id":0,"method":"getThreads","params":null}
+{ "id": 0, "method": "getThreads", "params": null }
 ```
 
 ### Responses
@@ -36,19 +37,28 @@ A response MUST contain either `result` or `error`, but not both.
 #### Success Response
 
 Example:
+
 ```json
-{"id":0,"result":{"threads":[]}}
+{ "id": 0, "result": { "threads": [] } }
 ```
 
 #### Error Response
 
 The `error` object has the following members:
+
 - `code`: An integer indicating the error type.
 - `message`: A string providing a short description of the error.
 
 Example:
+
 ```json
-{"id":1,"error":{"code":-32601,"message":"Method not found - 'nonExistentMethod'"}}
+{
+  "id": 1,
+  "error": {
+    "code": -32601,
+    "message": "Method not found - 'nonExistentMethod'"
+  }
+}
 ```
 
 ## Protocol Methods
@@ -122,6 +132,7 @@ A `ThreadId` is a string that uniquely identifies a conversation thread.
 - **`modifiedAt`**: An RFC 3339 timestamp indicating when the thread was last modified.
 
 Example:
+
 ```json
 {
   "id": "thread-123",
@@ -143,6 +154,7 @@ A `message` entry represents a message from either the user or the assistant.
 - **`chunks`**: An array of `MessageChunk` objects that make up the message content.
 
 Example:
+
 ```json
 {
   "type": "message",
@@ -165,6 +177,7 @@ A `readFile` entry logs that a file was read.
 - **`content`**: The content of the file as a string.
 
 Example:
+
 ```json
 {
   "type": "readFile",
@@ -181,6 +194,7 @@ A `Message` object represents a complete message in a thread.
 - **`chunks`**: An array of `MessageChunk` objects.
 
 Example:
+
 ```json
 {
   "role": "assistant",
@@ -201,6 +215,7 @@ A `MessageChunk` is a part of a message. Currently, only text chunks are support
 - **`chunk`**: The string content of the chunk.
 
 Example:
+
 ```json
 {
   "type": "text",
