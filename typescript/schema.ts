@@ -49,17 +49,11 @@ export type AnyAgentResult =
   | GetThreadEntriesResponse
   | SendMessageResponse;
 export type OpenThreadResponse = null;
-export type ThreadEntry =
-  | {
-      type: "message";
-      chunks: MessageChunk[];
-      role: Role;
-    }
-  | {
-      type: "readFile";
-      content: string;
-      path: string;
-    };
+export type ThreadEntry = {
+  type: "message";
+  chunks: MessageChunk[];
+  role: Role;
+};
 export type SendMessageResponse = null;
 
 export interface StreamMessageChunkParams {

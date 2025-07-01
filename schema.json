@@ -406,22 +406,6 @@
             }
           },
           "required": ["type", "role", "chunks"]
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "readFile"
-            },
-            "content": {
-              "type": "string"
-            },
-            "path": {
-              "type": "string"
-            }
-          },
-          "required": ["type", "path", "content"]
         }
       ]
     },

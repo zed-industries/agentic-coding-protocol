@@ -245,10 +245,6 @@ pub enum ThreadEntry {
         #[serde(flatten)]
         message: Message,
     },
-    ReadFile {
-        path: PathBuf,
-        content: String,
-    },
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
