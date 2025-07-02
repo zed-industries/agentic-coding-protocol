@@ -18,6 +18,12 @@
     "AnyAgentRequest": {
       "anyOf": [
         {
+          "$ref": "#/$defs/InitializeParams"
+        },
+        {
+          "$ref": "#/$defs/AuthenticateParams"
+        },
+        {
           "$ref": "#/$defs/GetThreadsParams"
         },
         {
@@ -36,6 +42,12 @@
     },
     "AnyAgentResult": {
       "anyOf": [
+        {
+          "$ref": "#/$defs/InitializeResponse"
+        },
+        {
+          "$ref": "#/$defs/AuthenticateResponse"
+        },
         {
           "$ref": "#/$defs/GetThreadsResponse"
         },
@@ -108,6 +120,12 @@
           "$ref": "#/$defs/UpdateToolCallResponse"
         }
       ]
+    },
+    "AuthenticateParams": {
+      "type": "null"
+    },
+    "AuthenticateResponse": {
+      "type": "null"
     },
     "CreateThreadParams": {
       "type": "null"
@@ -198,6 +216,18 @@
         "regex",
         "terminal"
       ]
+    },
+    "InitializeParams": {
+      "type": "null"
+    },
+    "InitializeResponse": {
+      "type": "object",
+      "properties": {
+        "isAuthenticated": {
+          "type": "boolean"
+        }
+      },
+      "required": ["isAuthenticated"]
     },
     "Message": {
       "type": "object",

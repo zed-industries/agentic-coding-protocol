@@ -80,20 +80,27 @@ export type ToolCallConfirmationOutcome =
   | "reject";
 export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
+  | InitializeParams
+  | AuthenticateParams
   | GetThreadsParams
   | CreateThreadParams
   | OpenThreadParams
   | GetThreadEntriesParams
   | SendMessageParams;
+export type InitializeParams = null;
+export type AuthenticateParams = null;
 export type GetThreadsParams = null;
 export type CreateThreadParams = null;
 export type Role = "user" | "assistant";
 export type AnyAgentResult =
+  | InitializeResponse
+  | AuthenticateResponse
   | GetThreadsResponse
   | CreateThreadResponse
   | OpenThreadResponse
   | GetThreadEntriesResponse
   | SendMessageResponse;
+export type AuthenticateResponse = null;
 export type OpenThreadResponse = null;
 export type ThreadEntry = {
   type: "message";
@@ -179,6 +186,9 @@ export interface Message {
   chunks: MessageChunk[];
   role: Role;
 }
+export interface InitializeResponse {
+  isAuthenticated: boolean;
+}
 export interface GetThreadsResponse {
   threads: ThreadMetadata[];
 }
@@ -221,6 +231,8 @@ export const CLIENT_METHODS = new Set([
 ]);
 
 export interface Agent {
+  initialize(params: InitializeParams): Promise<InitializeResponse>;
+  authenticate(params: AuthenticateParams): Promise<AuthenticateResponse>;
   getThreads(params: GetThreadsParams): Promise<GetThreadsResponse>;
   createThread(params: CreateThreadParams): Promise<CreateThreadResponse>;
   openThread(params: OpenThreadParams): Promise<OpenThreadResponse>;
@@ -231,6 +243,8 @@ export interface Agent {
 }
 
 export const AGENT_METHODS = new Set([
+  "initialize",
+  "authenticate",
   "getThreads",
   "createThread",
   "openThread",

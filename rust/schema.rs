@@ -197,6 +197,18 @@ acp_peer!(
     AnyAgentResult,
     AGENT_METHODS,
     (
+        initialize,
+        "initialize",
+        InitializeParams,
+        InitializeResponse
+    ),
+    (
+        authenticate,
+        "authenticate",
+        AuthenticateParams,
+        AuthenticateResponse
+    ),
+    (
         get_threads,
         "getThreads",
         GetThreadsParams,
@@ -227,6 +239,24 @@ acp_peer!(
         SendMessageResponse
     )
 );
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct InitializeParams;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct InitializeResponse {
+    pub is_authenticated: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthenticateParams;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthenticateResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

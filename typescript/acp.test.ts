@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   Agent,
+  AuthenticateParams,
+  AuthenticateResponse,
   Client,
   Connection,
   CreateThreadParams,
@@ -11,6 +13,8 @@ import {
   GetThreadsResponse,
   GlobSearchParams,
   GlobSearchResponse,
+  InitializeParams,
+  InitializeResponse,
   OpenThreadParams,
   OpenThreadResponse,
   PushToolCallParams,
@@ -282,6 +286,12 @@ describe("Connection", () => {
 
 class StubAgent implements Agent {
   constructor(private client: Client) {}
+  initialize(_: InitializeParams): Promise<InitializeResponse> {
+    throw new Error("Method not implemented.");
+  }
+  authenticate(_: AuthenticateParams): Promise<AuthenticateResponse> {
+    throw new Error("Method not implemented.");
+  }
   getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
     throw new Error("Method not implemented.");
   }
