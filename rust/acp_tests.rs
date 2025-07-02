@@ -14,6 +14,16 @@ impl Agent for TestAgent {
         Ok(GetThreadsResponse { threads: vec![] })
     }
 
+    async fn initialize(&self, _request: InitializeParams) -> Result<InitializeResponse> {
+        Ok(InitializeResponse {
+            is_authenticated: true,
+        })
+    }
+
+    async fn authenticate(&self, _request: AuthenticateParams) -> Result<AuthenticateResponse> {
+        Ok(AuthenticateResponse)
+    }
+
     async fn open_thread(&self, _request: OpenThreadParams) -> Result<OpenThreadResponse> {
         Ok(OpenThreadResponse)
     }
