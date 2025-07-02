@@ -25,6 +25,8 @@ import {
   StatResponse,
   StreamMessageChunkParams,
   StreamMessageChunkResponse,
+  UpdateToolCallParams,
+  UpdateToolCallResponse,
 } from "./acp.js";
 
 describe("Connection", () => {
@@ -317,6 +319,9 @@ class StubClient implements Client {
     throw new Error("Method not implemented.");
   }
   requestToolCall(_: RequestToolCallParams): Promise<RequestToolCallResponse> {
+    throw new Error("Method not implemented.");
+  }
+  updateToolCall(_: UpdateToolCallParams): Promise<UpdateToolCallResponse> {
     throw new Error("Method not implemented.");
   }
 }

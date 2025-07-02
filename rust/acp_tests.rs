@@ -79,6 +79,13 @@ impl Client for TestClient {
     ) -> Result<RequestToolCallResponse> {
         Ok(RequestToolCallResponse::Allowed { id: ToolCallId(0) })
     }
+
+    async fn update_tool_call(
+        &self,
+        _request: UpdateToolCallParams,
+    ) -> Result<UpdateToolCallResponse> {
+        Ok(UpdateToolCallResponse)
+    }
 }
 
 #[tokio::test]

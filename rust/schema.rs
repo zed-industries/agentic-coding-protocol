@@ -158,12 +158,6 @@ acp_peer!(
         ReadTextFileResponse
     ),
     (
-        request_tool_call,
-        "requestToolCall",
-        RequestToolCallParams,
-        RequestToolCallResponse
-    ),
-    (
         read_binary_file,
         "readBinaryFile",
         ReadBinaryFileParams,
@@ -175,6 +169,18 @@ acp_peer!(
         "globSearch",
         GlobSearchParams,
         GlobSearchResponse
+    ),
+    (
+        request_tool_call,
+        "requestToolCall",
+        RequestToolCallParams,
+        RequestToolCallResponse
+    ),
+    (
+        update_tool_call,
+        "updateToolCall",
+        UpdateToolCallParams,
+        UpdateToolCallResponse
     ),
 );
 
@@ -406,3 +412,35 @@ pub enum RequestToolCallResponse {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolCallId(pub u64);
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateToolCallParams {
+    pub thread_id: ThreadId,
+    pub tool_call_id: ToolCallId,
+    pub status: ToolCallStatus,
+    pub content: Option<ToolCallContent>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct UpdateToolCallResponse;
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ToolCallStatus {
+    Running,
+    Finished,
+    Error,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum ToolCallContent {
+    Markdown { markdown: String },
+    // Diff,
+    // Snippet {
+    //     path: PathBuf,
+    //     start_line: u32,
+    //     end_line: u32,
+    // },
+}

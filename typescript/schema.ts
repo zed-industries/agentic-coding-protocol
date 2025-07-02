@@ -6,22 +6,30 @@ export type AgentCodingProtocol =
 export type AnyClientRequest =
   | StreamMessageChunkParams
   | ReadTextFileParams
-  | RequestToolCallParams
   | ReadBinaryFileParams
   | StatParams
-  | GlobSearchParams;
+  | GlobSearchParams
+  | RequestToolCallParams
+  | UpdateToolCallParams;
 export type MessageChunk = {
   type: "text";
   chunk: string;
 };
 export type ThreadId = string;
+export type ToolCallContent = {
+  type: "markdown";
+  markdown: string;
+};
+export type ToolCallStatus = "running" | "finished" | "error";
+export type ToolCallId = number;
 export type AnyClientResult =
   | StreamMessageChunkResponse
   | ReadTextFileResponse
-  | RequestToolCallResponse
   | ReadBinaryFileResponse
   | StatResponse
-  | GlobSearchResponse;
+  | GlobSearchResponse
+  | RequestToolCallResponse
+  | UpdateToolCallResponse;
 export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
 export type RequestToolCallResponse =
@@ -32,7 +40,7 @@ export type RequestToolCallResponse =
   | {
       type: "rejected";
     };
-export type ToolCallId = number;
+export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
   | GetThreadsParams
   | CreateThreadParams
@@ -66,11 +74,6 @@ export interface ReadTextFileParams {
   path: string;
   threadId: ThreadId;
 }
-export interface RequestToolCallParams {
-  description: string;
-  threadId: ThreadId;
-  toolName: string;
-}
 export interface ReadBinaryFileParams {
   byteLimit?: number | null;
   byteOffset?: number | null;
@@ -84,6 +87,17 @@ export interface StatParams {
 export interface GlobSearchParams {
   pattern: string;
   threadId: ThreadId;
+}
+export interface RequestToolCallParams {
+  description: string;
+  threadId: ThreadId;
+  toolName: string;
+}
+export interface UpdateToolCallParams {
+  content: ToolCallContent | null;
+  status: ToolCallStatus;
+  threadId: ThreadId;
+  toolCallId: ToolCallId;
 }
 export interface ReadTextFileResponse {
   content: string;
@@ -134,21 +148,23 @@ export interface Client {
     params: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse>;
   readTextFile(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
-  requestToolCall(
-    params: RequestToolCallParams,
-  ): Promise<RequestToolCallResponse>;
   readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
   stat(params: StatParams): Promise<StatResponse>;
   globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
+  requestToolCall(
+    params: RequestToolCallParams,
+  ): Promise<RequestToolCallResponse>;
+  updateToolCall(params: UpdateToolCallParams): Promise<UpdateToolCallResponse>;
 }
 
 export const CLIENT_METHODS = new Set([
   "streamMessageChunk",
   "readTextFile",
-  "requestToolCall",
   "readBinaryFile",
   "stat",
   "globSearch",
+  "requestToolCall",
+  "updateToolCall",
 ]);
 
 export interface Agent {

@@ -62,9 +62,6 @@
           "$ref": "#/$defs/ReadTextFileParams"
         },
         {
-          "$ref": "#/$defs/RequestToolCallParams"
-        },
-        {
           "$ref": "#/$defs/ReadBinaryFileParams"
         },
         {
@@ -72,6 +69,12 @@
         },
         {
           "$ref": "#/$defs/GlobSearchParams"
+        },
+        {
+          "$ref": "#/$defs/RequestToolCallParams"
+        },
+        {
+          "$ref": "#/$defs/UpdateToolCallParams"
         }
       ]
     },
@@ -84,9 +87,6 @@
           "$ref": "#/$defs/ReadTextFileResponse"
         },
         {
-          "$ref": "#/$defs/RequestToolCallResponse"
-        },
-        {
           "$ref": "#/$defs/ReadBinaryFileResponse"
         },
         {
@@ -94,6 +94,12 @@
         },
         {
           "$ref": "#/$defs/GlobSearchResponse"
+        },
+        {
+          "$ref": "#/$defs/RequestToolCallResponse"
+        },
+        {
+          "$ref": "#/$defs/UpdateToolCallResponse"
         }
       ]
     },
@@ -428,10 +434,59 @@
       },
       "required": ["id", "title", "modifiedAt"]
     },
+    "ToolCallContent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "markdown"
+            },
+            "markdown": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "markdown"]
+        }
+      ]
+    },
     "ToolCallId": {
       "type": "integer",
       "format": "uint64",
       "minimum": 0
+    },
+    "ToolCallStatus": {
+      "type": "string",
+      "enum": ["running", "finished", "error"]
+    },
+    "UpdateToolCallParams": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/ToolCallStatus"
+        },
+        "threadId": {
+          "$ref": "#/$defs/ThreadId"
+        },
+        "toolCallId": {
+          "$ref": "#/$defs/ToolCallId"
+        }
+      },
+      "required": ["threadId", "toolCallId", "status", "content"]
+    },
+    "UpdateToolCallResponse": {
+      "type": "null"
     }
   }
 }
