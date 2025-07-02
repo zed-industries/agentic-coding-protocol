@@ -171,10 +171,10 @@ acp_peer!(
         GlobSearchResponse
     ),
     (
-        request_tool_call,
-        "requestToolCall",
-        RequestToolCallParams,
-        RequestToolCallResponse
+        request_tool_call_confirmation,
+        "requestToolCallConfirmation",
+        RequestToolCallConfirmationParams,
+        RequestToolCallConfirmationResponse
     ),
     (
         update_tool_call,
@@ -396,17 +396,50 @@ pub struct StatResponse {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestToolCallParams {
+pub struct RequestToolCallConfirmationParams {
     pub thread_id: ThreadId,
-    pub tool_name: String,
-    pub description: String,
+    pub title: String,
+    pub confirmation: ToolCallConfirmation,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "camelCase")]
-pub enum RequestToolCallResponse {
-    Allowed { id: ToolCallId },
-    Rejected,
+pub enum ToolCallConfirmation {
+    #[serde(rename_all = "camelCase")]
+    Edit {
+        file_name: String,
+        file_diff: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Execute {
+        command: String,
+        root_command: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Mcp {
+        server_name: String,
+        tool_name: String,
+        tool_display_name: String,
+    },
+    #[serde(rename_all = "camelCase")]
+    Info { prompt: String, urls: Vec<String> },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub struct RequestToolCallConfirmationResponse {
+    pub id: ToolCallId,
+    pub outcome: ToolCallConfirmationOutcome,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ToolCallConfirmationOutcome {
+    Allow,
+    AlwaysAllow,
+    AlwaysAllowMcpServer,
+    AlwaysAllowTool,
+    Reject,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]

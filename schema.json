@@ -71,7 +71,7 @@
           "$ref": "#/$defs/GlobSearchParams"
         },
         {
-          "$ref": "#/$defs/RequestToolCallParams"
+          "$ref": "#/$defs/RequestToolCallConfirmationParams"
         },
         {
           "$ref": "#/$defs/UpdateToolCallParams"
@@ -96,7 +96,7 @@
           "$ref": "#/$defs/GlobSearchResponse"
         },
         {
-          "$ref": "#/$defs/RequestToolCallResponse"
+          "$ref": "#/$defs/RequestToolCallConfirmationResponse"
         },
         {
           "$ref": "#/$defs/UpdateToolCallResponse"
@@ -292,47 +292,32 @@
       },
       "required": ["version", "content"]
     },
-    "RequestToolCallParams": {
+    "RequestToolCallConfirmationParams": {
       "type": "object",
       "properties": {
-        "description": {
+        "title": {
           "type": "string"
+        },
+        "confirmation": {
+          "$ref": "#/$defs/ToolCallConfirmation"
         },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
-        },
-        "toolName": {
-          "type": "string"
         }
       },
-      "required": ["threadId", "toolName", "description"]
+      "required": ["threadId", "title", "confirmation"]
     },
-    "RequestToolCallResponse": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "allowed"
-            },
-            "id": {
-              "$ref": "#/$defs/ToolCallId"
-            }
-          },
-          "required": ["type", "id"]
+    "RequestToolCallConfirmationResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ToolCallId"
         },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "rejected"
-            }
-          },
-          "required": ["type"]
+        "outcome": {
+          "$ref": "#/$defs/ToolCallConfirmationOutcome"
         }
-      ]
+      },
+      "required": ["id", "outcome"]
     },
     "Role": {
       "type": "string",
@@ -433,6 +418,90 @@
         }
       },
       "required": ["id", "title", "modifiedAt"]
+    },
+    "ToolCallConfirmation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "edit"
+            },
+            "fileDiff": {
+              "type": "string"
+            },
+            "fileName": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "fileName", "fileDiff"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "execute"
+            },
+            "command": {
+              "type": "string"
+            },
+            "rootCommand": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "command", "rootCommand"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "mcp"
+            },
+            "serverName": {
+              "type": "string"
+            },
+            "toolDisplayName": {
+              "type": "string"
+            },
+            "toolName": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "serverName", "toolName", "toolDisplayName"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "info"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "urls": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["type", "prompt", "urls"]
+        }
+      ]
+    },
+    "ToolCallConfirmationOutcome": {
+      "type": "string",
+      "enum": [
+        "allow",
+        "alwaysAllow",
+        "alwaysAllowMcpServer",
+        "alwaysAllowTool",
+        "reject"
+      ]
     },
     "ToolCallContent": {
       "oneOf": [

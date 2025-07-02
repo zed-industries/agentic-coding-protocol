@@ -9,13 +9,35 @@ export type AnyClientRequest =
   | ReadBinaryFileParams
   | StatParams
   | GlobSearchParams
-  | RequestToolCallParams
+  | RequestToolCallConfirmationParams
   | UpdateToolCallParams;
 export type MessageChunk = {
   type: "text";
   chunk: string;
 };
 export type ThreadId = string;
+export type ToolCallConfirmation =
+  | {
+      type: "edit";
+      fileDiff: string;
+      fileName: string;
+    }
+  | {
+      type: "execute";
+      command: string;
+      rootCommand: string;
+    }
+  | {
+      type: "mcp";
+      serverName: string;
+      toolDisplayName: string;
+      toolName: string;
+    }
+  | {
+      type: "info";
+      prompt: string;
+      urls: string[];
+    };
 export type ToolCallContent = {
   type: "markdown";
   markdown: string;
@@ -28,18 +50,16 @@ export type AnyClientResult =
   | ReadBinaryFileResponse
   | StatResponse
   | GlobSearchResponse
-  | RequestToolCallResponse
+  | RequestToolCallConfirmationResponse
   | UpdateToolCallResponse;
 export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
-export type RequestToolCallResponse =
-  | {
-      type: "allowed";
-      id: ToolCallId;
-    }
-  | {
-      type: "rejected";
-    };
+export type ToolCallConfirmationOutcome =
+  | "allow"
+  | "alwaysAllow"
+  | "alwaysAllowMcpServer"
+  | "alwaysAllowTool"
+  | "reject";
 export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
   | GetThreadsParams
@@ -88,10 +108,10 @@ export interface GlobSearchParams {
   pattern: string;
   threadId: ThreadId;
 }
-export interface RequestToolCallParams {
-  description: string;
+export interface RequestToolCallConfirmationParams {
+  title: string;
+  confirmation: ToolCallConfirmation;
   threadId: ThreadId;
-  toolName: string;
 }
 export interface UpdateToolCallParams {
   content: ToolCallContent | null;
@@ -113,6 +133,10 @@ export interface StatResponse {
 }
 export interface GlobSearchResponse {
   matches: string[];
+}
+export interface RequestToolCallConfirmationResponse {
+  id: ToolCallId;
+  outcome: ToolCallConfirmationOutcome;
 }
 export interface OpenThreadParams {
   threadId: ThreadId;
@@ -151,9 +175,9 @@ export interface Client {
   readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
   stat(params: StatParams): Promise<StatResponse>;
   globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
-  requestToolCall(
-    params: RequestToolCallParams,
-  ): Promise<RequestToolCallResponse>;
+  requestToolCallConfirmation(
+    params: RequestToolCallConfirmationParams,
+  ): Promise<RequestToolCallConfirmationResponse>;
   updateToolCall(params: UpdateToolCallParams): Promise<UpdateToolCallResponse>;
 }
 
@@ -163,7 +187,7 @@ export const CLIENT_METHODS = new Set([
   "readBinaryFile",
   "stat",
   "globSearch",
-  "requestToolCall",
+  "requestToolCallConfirmation",
   "updateToolCall",
 ]);
 

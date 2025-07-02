@@ -73,11 +73,14 @@ impl Client for TestClient {
         Ok(GlobSearchResponse { matches: vec![] })
     }
 
-    async fn request_tool_call(
+    async fn request_tool_call_confirmation(
         &self,
-        _request: RequestToolCallParams,
-    ) -> Result<RequestToolCallResponse> {
-        Ok(RequestToolCallResponse::Allowed { id: ToolCallId(0) })
+        _request: RequestToolCallConfirmationParams,
+    ) -> Result<RequestToolCallConfirmationResponse> {
+        Ok(RequestToolCallConfirmationResponse {
+            id: ToolCallId(0),
+            outcome: ToolCallConfirmationOutcome::Allow,
+        })
     }
 
     async fn update_tool_call(
