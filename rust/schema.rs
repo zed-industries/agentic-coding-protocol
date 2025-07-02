@@ -415,20 +415,32 @@ pub enum ToolCallConfirmation {
     Edit {
         file_name: String,
         file_diff: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
     },
     #[serde(rename_all = "camelCase")]
     Execute {
         command: String,
         root_command: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
     },
     #[serde(rename_all = "camelCase")]
     Mcp {
         server_name: String,
         tool_name: String,
         tool_display_name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
     },
     #[serde(rename_all = "camelCase")]
-    Info { prompt: String, urls: Vec<String> },
+    Fetch {
+        urls: Vec<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        description: Option<String>,
+    },
+    #[serde(rename_all = "camelCase")]
+    Other { description: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

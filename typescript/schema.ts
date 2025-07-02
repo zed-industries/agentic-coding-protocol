@@ -19,25 +19,32 @@ export type MessageChunk = {
 export type ThreadId = string;
 export type ToolCallConfirmation =
   | {
+      description?: string | null;
       type: "edit";
       fileDiff: string;
       fileName: string;
     }
   | {
+      description?: string | null;
       type: "execute";
       command: string;
       rootCommand: string;
     }
   | {
+      description?: string | null;
       type: "mcp";
       serverName: string;
       toolDisplayName: string;
       toolName: string;
     }
   | {
-      type: "info";
-      prompt: string;
+      description?: string | null;
+      type: "fetch";
       urls: string[];
+    }
+  | {
+      description: string;
+      type: "other";
     };
 export type ToolCallContent = {
   type: "markdown";

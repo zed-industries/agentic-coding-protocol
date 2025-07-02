@@ -451,6 +451,9 @@
         {
           "type": "object",
           "properties": {
+            "description": {
+              "type": ["string", "null"]
+            },
             "type": {
               "type": "string",
               "const": "edit"
@@ -467,6 +470,9 @@
         {
           "type": "object",
           "properties": {
+            "description": {
+              "type": ["string", "null"]
+            },
             "type": {
               "type": "string",
               "const": "execute"
@@ -483,6 +489,9 @@
         {
           "type": "object",
           "properties": {
+            "description": {
+              "type": ["string", "null"]
+            },
             "type": {
               "type": "string",
               "const": "mcp"
@@ -502,12 +511,12 @@
         {
           "type": "object",
           "properties": {
+            "description": {
+              "type": ["string", "null"]
+            },
             "type": {
               "type": "string",
-              "const": "info"
-            },
-            "prompt": {
-              "type": "string"
+              "const": "fetch"
             },
             "urls": {
               "type": "array",
@@ -516,7 +525,20 @@
               }
             }
           },
-          "required": ["type", "prompt", "urls"]
+          "required": ["type", "urls"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "other"
+            }
+          },
+          "required": ["type", "description"]
         }
       ]
     },
