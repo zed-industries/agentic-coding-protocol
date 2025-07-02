@@ -438,7 +438,7 @@ pub struct RequestToolCallConfirmationResponse {
     pub outcome: ToolCallConfirmationOutcome,
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum ToolCallConfirmationOutcome {
     Allow,
@@ -453,7 +453,6 @@ pub enum ToolCallConfirmationOutcome {
 pub struct PushToolCallParams {
     pub thread_id: ThreadId,
     pub title: String,
-    pub description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

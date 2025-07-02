@@ -117,7 +117,6 @@ export interface RequestToolCallConfirmationParams {
 }
 export interface PushToolCallParams {
   title: string;
-  description: string;
   threadId: ThreadId;
 }
 export interface UpdateToolCallParams {

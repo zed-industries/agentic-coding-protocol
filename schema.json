@@ -236,14 +236,11 @@
         "title": {
           "type": "string"
         },
-        "description": {
-          "type": "string"
-        },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "title", "description"]
+      "required": ["threadId", "title"]
     },
     "PushToolCallResponse": {
       "type": "object",
