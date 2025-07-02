@@ -2,7 +2,7 @@
 mod acp_tests;
 mod schema;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use futures::{
     AsyncBufReadExt as _, AsyncRead, AsyncWrite, AsyncWriteExt as _, FutureExt as _,
     StreamExt as _,
@@ -57,12 +57,18 @@ impl AgentConnection {
     }
 
     /// Send a request to the agent and wait for a response.
-    pub fn request<R: AgentRequest>(&self, params: R) -> impl Future<Output = Result<R::Response>> {
+    pub fn request<R: AgentRequest>(
+        &self,
+        params: R,
+    ) -> impl Future<Output = Result<R::Response, crate::Error>> {
         let params = params.into_any();
         let result = self.0.request(params.method_name(), params);
         async move {
             let result = result.await?;
-            R::response_from_any(result).ok_or_else(|| anyhow!("wrong response type"))
+            R::response_from_any(result).ok_or_else(|| crate::Error {
+                code: -32700,
+                message: "Unexpected Response".to_string(),
+            })
         }
     }
 }
@@ -92,12 +98,15 @@ impl ClientConnection {
     pub fn request<R: ClientRequest>(
         &self,
         params: R,
-    ) -> impl Future<Output = Result<R::Response>> {
+    ) -> impl Future<Output = Result<R::Response, crate::Error>> {
         let params = params.into_any();
         let result = self.0.request(params.method_name(), params);
         async move {
             let result = result.await?;
-            R::response_from_any(result).ok_or_else(|| anyhow!("wrong response type"))
+            R::response_from_any(result).ok_or_else(|| Error {
+                code: -32700,
+                message: format!("Could not parse"),
+            })
         }
     }
 }
@@ -112,7 +121,8 @@ where
     next_id: AtomicI32,
 }
 
-type ResponseSenders<T> = Arc<Mutex<HashMap<i32, (&'static str, oneshot::Sender<Result<T>>)>>>;
+type ResponseSenders<T> =
+    Arc<Mutex<HashMap<i32, (&'static str, oneshot::Sender<Result<T, crate::Error>>)>>>;
 
 #[derive(Debug, Deserialize)]
 struct IncomingMessage<'a> {
@@ -143,8 +153,8 @@ enum OutgoingMessage<Req, Resp> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Error {
-    code: i32,
-    message: String,
+    pub code: i32,
+    pub message: String,
 }
 
 impl<In, Out> Connection<In, Out>
@@ -183,7 +193,7 @@ where
         &self,
         method: &'static str,
         params: Out,
-    ) -> impl Future<Output = Result<Out::Response>> {
+    ) -> impl Future<Output = Result<Out::Response, crate::Error>> {
         let (tx, rx) = oneshot::channel();
         let id = self.next_id.fetch_add(1, SeqCst);
         if self
@@ -198,7 +208,12 @@ where
             // if the io thread has aborted, immediately drop tx.
             self.response_senders.lock().insert(id, (method, tx));
         }
-        async move { rx.await? }
+        async move {
+            rx.await.map_err(|_| Error {
+                code: -9,
+                message: "acp connection lost".to_string(),
+            })?
+        }
     }
 
     async fn handle_io(
@@ -242,7 +257,7 @@ where
                                 }
                             } else if let Some(error) = message.error {
                                 if let Some((_, tx)) = response_senders.lock().remove(&message.id) {
-                                    tx.send(Err(anyhow!("code: {}, message: {}", error.code, error.message))).ok();
+                                    tx.send(Err(error)).ok();
                                 }
                             } else {
                                 let result = message.result.unwrap_or(RawValue::NULL);
