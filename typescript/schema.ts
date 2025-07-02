@@ -46,6 +46,15 @@ export type ToolCallConfirmation =
       description: string;
       type: "other";
     };
+export type Icon =
+  | "fileSearch"
+  | "folder"
+  | "globe"
+  | "hammer"
+  | "lightBulb"
+  | "pencil"
+  | "regex"
+  | "terminal";
 export type ToolCallContent = {
   type: "markdown";
   markdown: string;
@@ -119,10 +128,12 @@ export interface GlobSearchParams {
 }
 export interface RequestToolCallConfirmationParams {
   confirmation: ToolCallConfirmation;
+  icon: Icon;
   label: string;
   threadId: ThreadId;
 }
 export interface PushToolCallParams {
+  icon: Icon;
   label: string;
   threadId: ThreadId;
 }

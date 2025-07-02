@@ -405,7 +405,21 @@ pub struct StatResponse {
 pub struct RequestToolCallConfirmationParams {
     pub thread_id: ThreadId,
     pub label: String,
+    pub icon: Icon,
     pub confirmation: ToolCallConfirmation,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum Icon {
+    FileSearch,
+    Folder,
+    Globe,
+    Hammer,
+    LightBulb,
+    Pencil,
+    Regex,
+    Terminal,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -465,6 +479,7 @@ pub enum ToolCallConfirmationOutcome {
 pub struct PushToolCallParams {
     pub thread_id: ThreadId,
     pub label: String,
+    pub icon: Icon,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

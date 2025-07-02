@@ -186,6 +186,19 @@
       },
       "required": ["matches"]
     },
+    "Icon": {
+      "type": "string",
+      "enum": [
+        "fileSearch",
+        "folder",
+        "globe",
+        "hammer",
+        "lightBulb",
+        "pencil",
+        "regex",
+        "terminal"
+      ]
+    },
     "Message": {
       "type": "object",
       "properties": {
@@ -233,6 +246,9 @@
     "PushToolCallParams": {
       "type": "object",
       "properties": {
+        "icon": {
+          "$ref": "#/$defs/Icon"
+        },
         "label": {
           "type": "string"
         },
@@ -240,7 +256,7 @@
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "label"]
+      "required": ["threadId", "label", "icon"]
     },
     "PushToolCallResponse": {
       "type": "object",
@@ -325,6 +341,9 @@
         "confirmation": {
           "$ref": "#/$defs/ToolCallConfirmation"
         },
+        "icon": {
+          "$ref": "#/$defs/Icon"
+        },
         "label": {
           "type": "string"
         },
@@ -332,7 +351,7 @@
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "label", "confirmation"]
+      "required": ["threadId", "label", "icon", "confirmation"]
     },
     "RequestToolCallConfirmationResponse": {
       "type": "object",
