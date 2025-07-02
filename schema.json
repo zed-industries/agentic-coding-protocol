@@ -615,6 +615,25 @@
             }
           },
           "required": ["type", "markdown"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "diff"
+            },
+            "newText": {
+              "type": "string"
+            },
+            "oldText": {
+              "type": ["string", "null"]
+            },
+            "path": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "path", "oldText", "newText"]
         }
       ]
     },

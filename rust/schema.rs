@@ -545,11 +545,12 @@ pub enum ToolCallStatus {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum ToolCallContent {
+    #[serde(rename_all = "camelCase")]
     Markdown { markdown: String },
-    // Diff,
-    // Snippet {
-    //     path: PathBuf,
-    //     start_line: u32,
-    //     end_line: u32,
-    // },
+    #[serde(rename_all = "camelCase")]
+    Diff {
+        path: PathBuf,
+        old_text: Option<String>,
+        new_text: String,
+    },
 }

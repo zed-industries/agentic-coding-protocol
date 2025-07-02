@@ -55,10 +55,17 @@ export type Icon =
   | "pencil"
   | "regex"
   | "terminal";
-export type ToolCallContent = {
-  type: "markdown";
-  markdown: string;
-};
+export type ToolCallContent =
+  | {
+      type: "markdown";
+      markdown: string;
+    }
+  | {
+      type: "diff";
+      newText: string;
+      oldText: string | null;
+      path: string;
+    };
 export type ToolCallStatus = "running" | "finished" | "error";
 export type ToolCallId = number;
 export type AnyClientResult =
