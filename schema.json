@@ -507,14 +507,17 @@
               "type": "string",
               "const": "edit"
             },
-            "fileDiff": {
+            "newText": {
               "type": "string"
             },
-            "fileName": {
+            "oldText": {
+              "type": ["string", "null"]
+            },
+            "path": {
               "type": "string"
             }
           },
-          "required": ["type", "fileName", "fileDiff"]
+          "required": ["type", "path", "oldText", "newText"]
         },
         {
           "type": "object",

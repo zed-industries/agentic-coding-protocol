@@ -457,8 +457,8 @@ pub enum Icon {
 pub enum ToolCallConfirmation {
     #[serde(rename_all = "camelCase")]
     Edit {
-        file_name: String,
-        file_diff: String,
+        #[serde(flatten)]
+        diff: Diff,
         #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
     },
@@ -549,8 +549,15 @@ pub enum ToolCallContent {
     Markdown { markdown: String },
     #[serde(rename_all = "camelCase")]
     Diff {
-        path: PathBuf,
-        old_text: Option<String>,
-        new_text: String,
+        #[serde(flatten)]
+        diff: Diff,
     },
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Diff {
+    pub path: PathBuf,
+    pub old_text: Option<String>,
+    pub new_text: String,
 }

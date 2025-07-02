@@ -21,8 +21,9 @@ export type ToolCallConfirmation =
   | {
       description?: string | null;
       type: "edit";
-      fileDiff: string;
-      fileName: string;
+      newText: string;
+      oldText: string | null;
+      path: string;
     }
   | {
       description?: string | null;
