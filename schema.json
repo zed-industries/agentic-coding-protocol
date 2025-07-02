@@ -233,14 +233,14 @@
     "PushToolCallParams": {
       "type": "object",
       "properties": {
-        "title": {
+        "displayName": {
           "type": "string"
         },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "title"]
+      "required": ["threadId", "displayName"]
     },
     "PushToolCallResponse": {
       "type": "object",
@@ -322,17 +322,17 @@
     "RequestToolCallConfirmationParams": {
       "type": "object",
       "properties": {
-        "title": {
-          "type": "string"
-        },
         "confirmation": {
           "$ref": "#/$defs/ToolCallConfirmation"
+        },
+        "displayName": {
+          "type": "string"
         },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "title", "confirmation"]
+      "required": ["threadId", "displayName", "confirmation"]
     },
     "RequestToolCallConfirmationResponse": {
       "type": "object",

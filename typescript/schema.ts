@@ -111,12 +111,12 @@ export interface GlobSearchParams {
   threadId: ThreadId;
 }
 export interface RequestToolCallConfirmationParams {
-  title: string;
   confirmation: ToolCallConfirmation;
+  displayName: string;
   threadId: ThreadId;
 }
 export interface PushToolCallParams {
-  title: string;
+  displayName: string;
   threadId: ThreadId;
 }
 export interface UpdateToolCallParams {
