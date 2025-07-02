@@ -119,11 +119,11 @@ export interface GlobSearchParams {
 }
 export interface RequestToolCallConfirmationParams {
   confirmation: ToolCallConfirmation;
-  displayName: string;
+  label: string;
   threadId: ThreadId;
 }
 export interface PushToolCallParams {
-  displayName: string;
+  label: string;
   threadId: ThreadId;
 }
 export interface UpdateToolCallParams {

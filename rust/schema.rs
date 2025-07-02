@@ -404,7 +404,7 @@ pub struct StatResponse {
 #[serde(rename_all = "camelCase")]
 pub struct RequestToolCallConfirmationParams {
     pub thread_id: ThreadId,
-    pub display_name: String,
+    pub label: String,
     pub confirmation: ToolCallConfirmation,
 }
 
@@ -464,7 +464,7 @@ pub enum ToolCallConfirmationOutcome {
 #[serde(rename_all = "camelCase")]
 pub struct PushToolCallParams {
     pub thread_id: ThreadId,
-    pub display_name: String,
+    pub label: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
