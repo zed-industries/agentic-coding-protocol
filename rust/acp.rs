@@ -186,14 +186,18 @@ where
     ) -> impl Future<Output = Result<Out::Response>> {
         let (tx, rx) = oneshot::channel();
         let id = self.next_id.fetch_add(1, SeqCst);
-        self.response_senders.lock().insert(id, (method, tx));
-        self.outgoing_tx
+        if self
+            .outgoing_tx
             .unbounded_send(OutgoingMessage::Request {
                 id,
                 method: method.into(),
                 params,
             })
-            .ok();
+            .is_ok()
+        {
+            // if the io thread has aborted, immediately drop tx.
+            self.response_senders.lock().insert(id, (method, tx));
+        }
         async move { rx.await? }
     }
 
@@ -264,6 +268,7 @@ where
                 }
             }
         }
+        response_senders.lock().clear();
         Ok(())
     }
 
