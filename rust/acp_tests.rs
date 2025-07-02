@@ -83,6 +83,10 @@ impl Client for TestClient {
         })
     }
 
+    async fn push_tool_call(&self, _request: PushToolCallParams) -> Result<PushToolCallResponse> {
+        Ok(PushToolCallResponse { id: ToolCallId(0) })
+    }
+
     async fn update_tool_call(
         &self,
         _request: UpdateToolCallParams,

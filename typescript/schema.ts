@@ -10,6 +10,7 @@ export type AnyClientRequest =
   | StatParams
   | GlobSearchParams
   | RequestToolCallConfirmationParams
+  | PushToolCallParams
   | UpdateToolCallParams;
 export type MessageChunk = {
   type: "text";
@@ -51,6 +52,7 @@ export type AnyClientResult =
   | StatResponse
   | GlobSearchResponse
   | RequestToolCallConfirmationResponse
+  | PushToolCallResponse
   | UpdateToolCallResponse;
 export type StreamMessageChunkResponse = null;
 export type FileVersion = number;
@@ -113,6 +115,11 @@ export interface RequestToolCallConfirmationParams {
   confirmation: ToolCallConfirmation;
   threadId: ThreadId;
 }
+export interface PushToolCallParams {
+  title: string;
+  description: string;
+  threadId: ThreadId;
+}
 export interface UpdateToolCallParams {
   content: ToolCallContent | null;
   status: ToolCallStatus;
@@ -137,6 +144,9 @@ export interface GlobSearchResponse {
 export interface RequestToolCallConfirmationResponse {
   id: ToolCallId;
   outcome: ToolCallConfirmationOutcome;
+}
+export interface PushToolCallResponse {
+  id: ToolCallId;
 }
 export interface OpenThreadParams {
   threadId: ThreadId;
@@ -178,6 +188,7 @@ export interface Client {
   requestToolCallConfirmation(
     params: RequestToolCallConfirmationParams,
   ): Promise<RequestToolCallConfirmationResponse>;
+  pushToolCall(params: PushToolCallParams): Promise<PushToolCallResponse>;
   updateToolCall(params: UpdateToolCallParams): Promise<UpdateToolCallResponse>;
 }
 
@@ -188,6 +199,7 @@ export const CLIENT_METHODS = new Set([
   "stat",
   "globSearch",
   "requestToolCallConfirmation",
+  "pushToolCall",
   "updateToolCall",
 ]);
 

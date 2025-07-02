@@ -74,6 +74,9 @@
           "$ref": "#/$defs/RequestToolCallConfirmationParams"
         },
         {
+          "$ref": "#/$defs/PushToolCallParams"
+        },
+        {
           "$ref": "#/$defs/UpdateToolCallParams"
         }
       ]
@@ -97,6 +100,9 @@
         },
         {
           "$ref": "#/$defs/RequestToolCallConfirmationResponse"
+        },
+        {
+          "$ref": "#/$defs/PushToolCallResponse"
         },
         {
           "$ref": "#/$defs/UpdateToolCallResponse"
@@ -223,6 +229,30 @@
     },
     "OpenThreadResponse": {
       "type": "null"
+    },
+    "PushToolCallParams": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "threadId": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": ["threadId", "title", "description"]
+    },
+    "PushToolCallResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ToolCallId"
+        }
+      },
+      "required": ["id"]
     },
     "ReadBinaryFileParams": {
       "type": "object",

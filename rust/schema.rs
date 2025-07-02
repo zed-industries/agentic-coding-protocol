@@ -177,6 +177,12 @@ acp_peer!(
         RequestToolCallConfirmationResponse
     ),
     (
+        push_tool_call,
+        "pushToolCall",
+        PushToolCallParams,
+        PushToolCallResponse
+    ),
+    (
         update_tool_call,
         "updateToolCall",
         UpdateToolCallParams,
@@ -440,6 +446,20 @@ pub enum ToolCallConfirmationOutcome {
     AlwaysAllowMcpServer,
     AlwaysAllowTool,
     Reject,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PushToolCallParams {
+    pub thread_id: ThreadId,
+    pub title: String,
+    pub description: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub struct PushToolCallResponse {
+    pub id: ToolCallId,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
