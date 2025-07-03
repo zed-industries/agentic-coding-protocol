@@ -4,14 +4,19 @@ export type AgentCodingProtocol =
   | AnyAgentRequest
   | AnyAgentResult;
 export type AnyClientRequest =
-  | StreamMessageChunkParams
+  | StreamAssistantMessageChunkParams
   | RequestToolCallConfirmationParams
   | PushToolCallParams
   | UpdateToolCallParams;
-export type MessageChunk = {
-  type: "text";
-  chunk: string;
-};
+export type AssistantMessageChunk =
+  | {
+      type: "text";
+      chunk: string;
+    }
+  | {
+      type: "thought";
+      chunk: string;
+    };
 export type ThreadId = string;
 export type ToolCallConfirmation =
   | {
@@ -63,11 +68,11 @@ export type Icon =
 export type ToolCallStatus = "running" | "finished" | "error";
 export type ToolCallId = number;
 export type AnyClientResult =
-  | StreamMessageChunkResponse
+  | StreamAssistantMessageChunkResponse
   | RequestToolCallConfirmationResponse
   | PushToolCallResponse
   | UpdateToolCallResponse;
-export type StreamMessageChunkResponse = null;
+export type StreamAssistantMessageChunkResponse = null;
 export type ToolCallConfirmationOutcome =
   | "allow"
   | "alwaysAllow"
@@ -79,21 +84,24 @@ export type AnyAgentRequest =
   | InitializeParams
   | AuthenticateParams
   | CreateThreadParams
-  | SendMessageParams;
+  | SendUserMessageParams;
 export type InitializeParams = null;
 export type AuthenticateParams = null;
 export type CreateThreadParams = null;
-export type Role = "user" | "assistant";
+export type UserMessageChunk = {
+  type: "text";
+  chunk: string;
+};
 export type AnyAgentResult =
   | InitializeResponse
   | AuthenticateResponse
   | CreateThreadResponse
-  | SendMessageResponse;
+  | SendUserMessageResponse;
 export type AuthenticateResponse = null;
-export type SendMessageResponse = null;
+export type SendUserMessageResponse = null;
 
-export interface StreamMessageChunkParams {
-  chunk: MessageChunk;
+export interface StreamAssistantMessageChunkParams {
+  chunk: AssistantMessageChunk;
   threadId: ThreadId;
 }
 export interface RequestToolCallConfirmationParams {
@@ -122,13 +130,12 @@ export interface RequestToolCallConfirmationResponse {
 export interface PushToolCallResponse {
   id: ToolCallId;
 }
-export interface SendMessageParams {
-  message: Message;
+export interface SendUserMessageParams {
+  message: UserMessage;
   threadId: ThreadId;
 }
-export interface Message {
-  chunks: MessageChunk[];
-  role: Role;
+export interface UserMessage {
+  chunks: UserMessageChunk[];
 }
 export interface InitializeResponse {
   isAuthenticated: boolean;
@@ -138,9 +145,9 @@ export interface CreateThreadResponse {
 }
 
 export interface Client {
-  streamMessageChunk(
-    params: StreamMessageChunkParams,
-  ): Promise<StreamMessageChunkResponse>;
+  streamAssistantMessageChunk(
+    params: StreamAssistantMessageChunkParams,
+  ): Promise<StreamAssistantMessageChunkResponse>;
   requestToolCallConfirmation(
     params: RequestToolCallConfirmationParams,
   ): Promise<RequestToolCallConfirmationResponse>;
@@ -149,7 +156,7 @@ export interface Client {
 }
 
 export const CLIENT_METHODS = new Set([
-  "streamMessageChunk",
+  "streamAssistantMessageChunk",
   "requestToolCallConfirmation",
   "pushToolCall",
   "updateToolCall",
@@ -159,12 +166,14 @@ export interface Agent {
   initialize(params: InitializeParams): Promise<InitializeResponse>;
   authenticate(params: AuthenticateParams): Promise<AuthenticateResponse>;
   createThread(params: CreateThreadParams): Promise<CreateThreadResponse>;
-  sendMessage(params: SendMessageParams): Promise<SendMessageResponse>;
+  sendUserMessage(
+    params: SendUserMessageParams,
+  ): Promise<SendUserMessageResponse>;
 }
 
 export const AGENT_METHODS = new Set([
   "initialize",
   "authenticate",
   "createThread",
-  "sendMessage",
+  "sendUserMessage",
 ]);

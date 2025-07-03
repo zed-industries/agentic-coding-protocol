@@ -13,10 +13,10 @@ import {
   PushToolCallResponse,
   RequestToolCallConfirmationParams,
   RequestToolCallConfirmationResponse,
-  SendMessageParams,
-  SendMessageResponse,
-  StreamMessageChunkParams,
-  StreamMessageChunkResponse,
+  SendUserMessageParams,
+  SendUserMessageResponse,
+  StreamAssistantMessageChunkParams,
+  StreamAssistantMessageChunkResponse,
   UpdateToolCallParams,
   UpdateToolCallResponse,
 } from "./acp.js";
@@ -216,16 +216,16 @@ class StubAgent implements Agent {
   createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
     throw new Error("Method not implemented.");
   }
-  sendMessage(_: SendMessageParams): Promise<SendMessageResponse> {
+  sendUserMessage(_: SendUserMessageParams): Promise<SendUserMessageResponse> {
     throw new Error("Method not implemented.");
   }
 }
 
 class StubClient implements Client {
   constructor(private agent: Agent) {}
-  streamMessageChunk(
-    _: StreamMessageChunkParams,
-  ): Promise<StreamMessageChunkResponse> {
+  streamAssistantMessageChunk(
+    _: StreamAssistantMessageChunkParams,
+  ): Promise<StreamAssistantMessageChunkResponse> {
     throw new Error("Method not implemented.");
   }
   requestToolCallConfirmation(

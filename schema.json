@@ -27,7 +27,7 @@
           "$ref": "#/$defs/CreateThreadParams"
         },
         {
-          "$ref": "#/$defs/SendMessageParams"
+          "$ref": "#/$defs/SendUserMessageParams"
         }
       ]
     },
@@ -43,14 +43,14 @@
           "$ref": "#/$defs/CreateThreadResponse"
         },
         {
-          "$ref": "#/$defs/SendMessageResponse"
+          "$ref": "#/$defs/SendUserMessageResponse"
         }
       ]
     },
     "AnyClientRequest": {
       "anyOf": [
         {
-          "$ref": "#/$defs/StreamMessageChunkParams"
+          "$ref": "#/$defs/StreamAssistantMessageChunkParams"
         },
         {
           "$ref": "#/$defs/RequestToolCallConfirmationParams"
@@ -66,7 +66,7 @@
     "AnyClientResult": {
       "anyOf": [
         {
-          "$ref": "#/$defs/StreamMessageChunkResponse"
+          "$ref": "#/$defs/StreamAssistantMessageChunkResponse"
         },
         {
           "$ref": "#/$defs/RequestToolCallConfirmationResponse"
@@ -76,6 +76,36 @@
         },
         {
           "$ref": "#/$defs/UpdateToolCallResponse"
+        }
+      ]
+    },
+    "AssistantMessageChunk": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "chunk": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "chunk"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "thought"
+            },
+            "chunk": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "chunk"]
         }
       ]
     },
@@ -121,38 +151,6 @@
         }
       },
       "required": ["isAuthenticated"]
-    },
-    "Message": {
-      "type": "object",
-      "properties": {
-        "chunks": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/MessageChunk"
-          }
-        },
-        "role": {
-          "$ref": "#/$defs/Role"
-        }
-      },
-      "required": ["role", "chunks"]
-    },
-    "MessageChunk": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "text"
-            },
-            "chunk": {
-              "type": "string"
-            }
-          },
-          "required": ["type", "chunk"]
-        }
-      ]
     },
     "PushToolCallParams": {
       "type": "object",
@@ -228,15 +226,11 @@
       },
       "required": ["id", "outcome"]
     },
-    "Role": {
-      "type": "string",
-      "enum": ["user", "assistant"]
-    },
-    "SendMessageParams": {
+    "SendUserMessageParams": {
       "type": "object",
       "properties": {
         "message": {
-          "$ref": "#/$defs/Message"
+          "$ref": "#/$defs/UserMessage"
         },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
@@ -244,14 +238,14 @@
       },
       "required": ["threadId", "message"]
     },
-    "SendMessageResponse": {
+    "SendUserMessageResponse": {
       "type": "null"
     },
-    "StreamMessageChunkParams": {
+    "StreamAssistantMessageChunkParams": {
       "type": "object",
       "properties": {
         "chunk": {
-          "$ref": "#/$defs/MessageChunk"
+          "$ref": "#/$defs/AssistantMessageChunk"
         },
         "threadId": {
           "$ref": "#/$defs/ThreadId"
@@ -259,7 +253,7 @@
       },
       "required": ["threadId", "chunk"]
     },
-    "StreamMessageChunkResponse": {
+    "StreamAssistantMessageChunkResponse": {
       "type": "null"
     },
     "ThreadId": {
@@ -437,6 +431,35 @@
     },
     "UpdateToolCallResponse": {
       "type": "null"
+    },
+    "UserMessage": {
+      "type": "object",
+      "properties": {
+        "chunks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UserMessageChunk"
+          }
+        }
+      },
+      "required": ["chunks"]
+    },
+    "UserMessageChunk": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "chunk": {
+              "type": "string"
+            }
+          },
+          "required": ["type", "chunk"]
+        }
+      ]
     }
   }
 }
