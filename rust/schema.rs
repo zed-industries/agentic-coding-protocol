@@ -428,6 +428,7 @@ pub struct StatParams {
 pub struct StatResponse {
     pub exists: bool,
     pub is_directory: bool,
+    pub size: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

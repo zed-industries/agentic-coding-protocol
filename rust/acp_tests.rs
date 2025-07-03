@@ -76,6 +76,7 @@ impl Client for TestClient {
         Ok(StatResponse {
             exists: false,
             is_directory: false,
+            size: 0,
         })
     }
 

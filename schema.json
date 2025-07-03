@@ -434,9 +434,14 @@
         },
         "isDirectory": {
           "type": "boolean"
+        },
+        "size": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
         }
       },
-      "required": ["exists", "isDirectory"]
+      "required": ["exists", "isDirectory", "size"]
     },
     "StreamMessageChunkParams": {
       "type": "object",

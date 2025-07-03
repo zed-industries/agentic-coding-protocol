@@ -169,6 +169,7 @@ export interface ReadBinaryFileResponse {
 export interface StatResponse {
   exists: boolean;
   isDirectory: boolean;
+  size: number;
 }
 export interface GlobSearchResponse {
   matches: string[];
