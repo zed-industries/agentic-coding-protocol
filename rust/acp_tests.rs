@@ -25,18 +25,21 @@ impl Agent for TestAgent {
         })
     }
 
-    async fn send_message(&self, _request: SendMessageParams) -> Result<SendMessageResponse> {
-        Ok(SendMessageResponse)
+    async fn send_user_message(
+        &self,
+        _request: SendUserMessageParams,
+    ) -> Result<SendUserMessageResponse> {
+        Ok(SendUserMessageResponse)
     }
 }
 
 #[async_trait(?Send)]
 impl Client for TestClient {
-    async fn stream_message_chunk(
+    async fn stream_assistant_message_chunk(
         &self,
-        _request: StreamMessageChunkParams,
-    ) -> Result<StreamMessageChunkResponse> {
-        Ok(StreamMessageChunkResponse {})
+        _request: StreamAssistantMessageChunkParams,
+    ) -> Result<StreamAssistantMessageChunkResponse> {
+        Ok(StreamAssistantMessageChunkResponse {})
     }
 
     async fn request_tool_call_confirmation(

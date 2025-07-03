@@ -146,10 +146,10 @@ acp_peer!(
     AnyClientResult,
     CLIENT_METHODS,
     (
-        stream_message_chunk,
-        "streamMessageChunk",
-        StreamMessageChunkParams,
-        StreamMessageChunkResponse
+        stream_assistant_message_chunk,
+        "streamAssistantMessageChunk",
+        StreamAssistantMessageChunkParams,
+        StreamAssistantMessageChunkResponse
     ),
     (
         request_tool_call_confirmation,
@@ -196,10 +196,10 @@ acp_peer!(
         CreateThreadResponse
     ),
     (
-        send_message,
-        "sendMessage",
-        SendMessageParams,
-        SendMessageResponse
+        send_user_message,
+        "sendUserMessage",
+        SendUserMessageParams,
+        SendUserMessageResponse
     )
 );
 
@@ -223,22 +223,21 @@ pub struct AuthenticateResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct Message {
-    pub role: Role,
-    pub chunks: Vec<MessageChunk>,
+pub struct UserMessage {
+    pub chunks: Vec<UserMessageChunk>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", rename_all = "camelCase")]
-pub enum MessageChunk {
+pub enum UserMessageChunk {
     Text { chunk: String },
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub enum Role {
-    User,
-    Assistant,
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum AssistantMessageChunk {
+    Text { chunk: String },
+    Thought { chunk: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -275,25 +274,25 @@ pub struct ThreadId(pub String);
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct SendMessageParams {
+pub struct SendUserMessageParams {
     pub thread_id: ThreadId,
-    pub message: Message,
+    pub message: UserMessage,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct SendMessageResponse;
+pub struct SendUserMessageResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct StreamMessageChunkParams {
+pub struct StreamAssistantMessageChunkParams {
     pub thread_id: ThreadId,
-    pub chunk: MessageChunk,
+    pub chunk: AssistantMessageChunk,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct StreamMessageChunkResponse;
+pub struct StreamAssistantMessageChunkResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
