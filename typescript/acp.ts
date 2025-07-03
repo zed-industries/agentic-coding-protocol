@@ -19,14 +19,14 @@ type AnyResponse = { id: number } & Result<unknown>;
 
 type Result<T> =
   | {
-    result: T;
-  }
+      result: T;
+    }
   | {
-    error: {
-      code: number;
-      message: string;
+      error: {
+        code: number;
+        message: string;
+      };
     };
-  };
 
 export class Connection<D, P> {
   #pendingResponses: Map<number, PendingResponse> = new Map();
