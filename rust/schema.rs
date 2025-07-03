@@ -302,6 +302,8 @@ pub struct RequestToolCallConfirmationParams {
     pub label: String,
     pub icon: Icon,
     pub confirmation: ToolCallConfirmation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<ToolCallContent>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -322,8 +324,6 @@ pub enum Icon {
 pub enum ToolCallConfirmation {
     #[serde(rename_all = "camelCase")]
     Edit {
-        #[serde(flatten)]
-        diff: Diff,
         #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
     },
@@ -375,6 +375,8 @@ pub struct PushToolCallParams {
     pub thread_id: ThreadId,
     pub label: String,
     pub icon: Icon,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<ToolCallContent>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

@@ -17,9 +17,6 @@ export type ToolCallConfirmation =
   | {
       description?: string | null;
       type: "edit";
-      newText: string;
-      oldText: string | null;
-      path: string;
     }
   | {
       description?: string | null;
@@ -43,15 +40,6 @@ export type ToolCallConfirmation =
       description: string;
       type: "other";
     };
-export type Icon =
-  | "fileSearch"
-  | "folder"
-  | "globe"
-  | "hammer"
-  | "lightBulb"
-  | "pencil"
-  | "regex"
-  | "terminal";
 export type ToolCallContent =
   | {
       type: "markdown";
@@ -63,6 +51,15 @@ export type ToolCallContent =
       oldText: string | null;
       path: string;
     };
+export type Icon =
+  | "fileSearch"
+  | "folder"
+  | "globe"
+  | "hammer"
+  | "lightBulb"
+  | "pencil"
+  | "regex"
+  | "terminal";
 export type ToolCallStatus = "running" | "finished" | "error";
 export type ToolCallId = number;
 export type AnyClientResult =
@@ -101,11 +98,13 @@ export interface StreamMessageChunkParams {
 }
 export interface RequestToolCallConfirmationParams {
   confirmation: ToolCallConfirmation;
+  content?: ToolCallContent | null;
   icon: Icon;
   label: string;
   threadId: ThreadId;
 }
 export interface PushToolCallParams {
+  content?: ToolCallContent | null;
   icon: Icon;
   label: string;
   threadId: ThreadId;

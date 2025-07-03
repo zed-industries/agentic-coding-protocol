@@ -89,6 +89,7 @@ async fn test_client_agent_communication() {
                 thread_id: ThreadId("0".into()),
                 label: "test".into(),
                 icon: Icon::FileSearch,
+                content: None,
             });
             let response = timeout(Duration::from_secs(2), response)
                 .await

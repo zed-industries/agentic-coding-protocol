@@ -157,6 +157,16 @@
     "PushToolCallParams": {
       "type": "object",
       "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "icon": {
           "$ref": "#/$defs/Icon"
         },
@@ -183,6 +193,16 @@
       "properties": {
         "confirmation": {
           "$ref": "#/$defs/ToolCallConfirmation"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolCallContent"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "icon": {
           "$ref": "#/$defs/Icon"
@@ -256,18 +276,9 @@
             "type": {
               "type": "string",
               "const": "edit"
-            },
-            "newText": {
-              "type": "string"
-            },
-            "oldText": {
-              "type": ["string", "null"]
-            },
-            "path": {
-              "type": "string"
             }
           },
-          "required": ["type", "path", "oldText", "newText"]
+          "required": ["type"]
         },
         {
           "type": "object",
