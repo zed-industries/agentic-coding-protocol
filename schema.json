@@ -24,16 +24,7 @@
           "$ref": "#/$defs/AuthenticateParams"
         },
         {
-          "$ref": "#/$defs/GetThreadsParams"
-        },
-        {
           "$ref": "#/$defs/CreateThreadParams"
-        },
-        {
-          "$ref": "#/$defs/OpenThreadParams"
-        },
-        {
-          "$ref": "#/$defs/GetThreadEntriesParams"
         },
         {
           "$ref": "#/$defs/SendMessageParams"
@@ -49,16 +40,7 @@
           "$ref": "#/$defs/AuthenticateResponse"
         },
         {
-          "$ref": "#/$defs/GetThreadsResponse"
-        },
-        {
           "$ref": "#/$defs/CreateThreadResponse"
-        },
-        {
-          "$ref": "#/$defs/OpenThreadResponse"
-        },
-        {
-          "$ref": "#/$defs/GetThreadEntriesResponse"
         },
         {
           "$ref": "#/$defs/SendMessageResponse"
@@ -69,18 +51,6 @@
       "anyOf": [
         {
           "$ref": "#/$defs/StreamMessageChunkParams"
-        },
-        {
-          "$ref": "#/$defs/ReadTextFileParams"
-        },
-        {
-          "$ref": "#/$defs/ReadBinaryFileParams"
-        },
-        {
-          "$ref": "#/$defs/StatParams"
-        },
-        {
-          "$ref": "#/$defs/GlobSearchParams"
         },
         {
           "$ref": "#/$defs/RequestToolCallConfirmationParams"
@@ -97,18 +67,6 @@
       "anyOf": [
         {
           "$ref": "#/$defs/StreamMessageChunkResponse"
-        },
-        {
-          "$ref": "#/$defs/ReadTextFileResponse"
-        },
-        {
-          "$ref": "#/$defs/ReadBinaryFileResponse"
-        },
-        {
-          "$ref": "#/$defs/StatResponse"
-        },
-        {
-          "$ref": "#/$defs/GlobSearchResponse"
         },
         {
           "$ref": "#/$defs/RequestToolCallConfirmationResponse"
@@ -138,71 +96,6 @@
         }
       },
       "required": ["threadId"]
-    },
-    "FileVersion": {
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0
-    },
-    "GetThreadEntriesParams": {
-      "type": "object",
-      "properties": {
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId"]
-    },
-    "GetThreadEntriesResponse": {
-      "type": "object",
-      "properties": {
-        "entries": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ThreadEntry"
-          }
-        }
-      },
-      "required": ["entries"]
-    },
-    "GetThreadsParams": {
-      "type": "null"
-    },
-    "GetThreadsResponse": {
-      "type": "object",
-      "properties": {
-        "threads": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/ThreadMetadata"
-          }
-        }
-      },
-      "required": ["threads"]
-    },
-    "GlobSearchParams": {
-      "type": "object",
-      "properties": {
-        "pattern": {
-          "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId", "pattern"]
-    },
-    "GlobSearchResponse": {
-      "type": "object",
-      "properties": {
-        "matches": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": ["matches"]
     },
     "Icon": {
       "type": "string",
@@ -261,18 +154,6 @@
         }
       ]
     },
-    "OpenThreadParams": {
-      "type": "object",
-      "properties": {
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId"]
-    },
-    "OpenThreadResponse": {
-      "type": "null"
-    },
     "PushToolCallParams": {
       "type": "object",
       "properties": {
@@ -296,74 +177,6 @@
         }
       },
       "required": ["id"]
-    },
-    "ReadBinaryFileParams": {
-      "type": "object",
-      "properties": {
-        "byteLimit": {
-          "type": ["integer", "null"],
-          "format": "uint64",
-          "minimum": 0
-        },
-        "byteOffset": {
-          "type": ["integer", "null"],
-          "format": "uint64",
-          "minimum": 0
-        },
-        "path": {
-          "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId", "path"]
-    },
-    "ReadBinaryFileResponse": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string"
-        },
-        "version": {
-          "$ref": "#/$defs/FileVersion"
-        }
-      },
-      "required": ["version", "content"]
-    },
-    "ReadTextFileParams": {
-      "type": "object",
-      "properties": {
-        "lineLimit": {
-          "type": ["integer", "null"],
-          "format": "uint32",
-          "minimum": 0
-        },
-        "lineOffset": {
-          "type": ["integer", "null"],
-          "format": "uint32",
-          "minimum": 0
-        },
-        "path": {
-          "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId", "path"]
-    },
-    "ReadTextFileResponse": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string"
-        },
-        "version": {
-          "$ref": "#/$defs/FileVersion"
-        }
-      },
-      "required": ["version", "content"]
     },
     "RequestToolCallConfirmationParams": {
       "type": "object",
@@ -414,35 +227,6 @@
     "SendMessageResponse": {
       "type": "null"
     },
-    "StatParams": {
-      "type": "object",
-      "properties": {
-        "path": {
-          "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId", "path"]
-    },
-    "StatResponse": {
-      "type": "object",
-      "properties": {
-        "exists": {
-          "type": "boolean"
-        },
-        "isDirectory": {
-          "type": "boolean"
-        },
-        "size": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0
-        }
-      },
-      "required": ["exists", "isDirectory", "size"]
-    },
     "StreamMessageChunkParams": {
       "type": "object",
       "properties": {
@@ -458,47 +242,8 @@
     "StreamMessageChunkResponse": {
       "type": "null"
     },
-    "ThreadEntry": {
-      "oneOf": [
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "const": "message"
-            },
-            "chunks": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/MessageChunk"
-              }
-            },
-            "role": {
-              "$ref": "#/$defs/Role"
-            }
-          },
-          "required": ["type", "role", "chunks"]
-        }
-      ]
-    },
     "ThreadId": {
       "type": "string"
-    },
-    "ThreadMetadata": {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "id": {
-          "$ref": "#/$defs/ThreadId"
-        },
-        "modifiedAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["id", "title", "modifiedAt"]
     },
     "ToolCallConfirmation": {
       "oneOf": [

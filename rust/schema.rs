@@ -152,25 +152,6 @@ acp_peer!(
         StreamMessageChunkResponse
     ),
     (
-        read_text_file,
-        "readTextFile",
-        ReadTextFileParams,
-        ReadTextFileResponse
-    ),
-    (
-        read_binary_file,
-        "readBinaryFile",
-        ReadBinaryFileParams,
-        ReadBinaryFileResponse
-    ),
-    (stat, "stat", StatParams, StatResponse),
-    (
-        glob_search,
-        "globSearch",
-        GlobSearchParams,
-        GlobSearchResponse
-    ),
-    (
         request_tool_call_confirmation,
         "requestToolCallConfirmation",
         RequestToolCallConfirmationParams,
@@ -209,28 +190,10 @@ acp_peer!(
         AuthenticateResponse
     ),
     (
-        get_threads,
-        "getThreads",
-        GetThreadsParams,
-        GetThreadsResponse
-    ),
-    (
         create_thread,
         "createThread",
         CreateThreadParams,
         CreateThreadResponse
-    ),
-    (
-        open_thread,
-        "openThread",
-        OpenThreadParams,
-        OpenThreadResponse
-    ),
-    (
-        get_thread_entries,
-        "getThreadEntries",
-        GetThreadEntriesParams,
-        GetThreadEntriesResponse
     ),
     (
         send_message,
@@ -257,37 +220,6 @@ pub struct AuthenticateParams;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticateResponse;
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GetThreadsParams;
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GetThreadsResponse {
-    pub threads: Vec<ThreadMetadata>,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GetThreadEntriesParams {
-    pub thread_id: ThreadId,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GetThreadEntriesResponse {
-    pub entries: Vec<ThreadEntry>,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum ThreadEntry {
-    Message {
-        #[serde(flatten)]
-        message: Message,
-    },
-}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -354,10 +286,6 @@ pub struct SendMessageResponse;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct FileVersion(pub u64);
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct StreamMessageChunkParams {
     pub thread_id: ThreadId,
     pub chunk: MessageChunk,
@@ -366,70 +294,6 @@ pub struct StreamMessageChunkParams {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct StreamMessageChunkResponse;
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ReadTextFileParams {
-    pub thread_id: ThreadId,
-    pub path: PathBuf,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub line_offset: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub line_limit: Option<u32>,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ReadBinaryFileParams {
-    pub thread_id: ThreadId,
-    pub path: PathBuf,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub byte_offset: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub byte_limit: Option<u64>,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ReadTextFileResponse {
-    pub version: FileVersion,
-    pub content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct ReadBinaryFileResponse {
-    pub version: FileVersion,
-    pub content: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GlobSearchParams {
-    pub thread_id: ThreadId,
-    pub pattern: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct GlobSearchResponse {
-    pub matches: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct StatParams {
-    pub thread_id: ThreadId,
-    pub path: PathBuf,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct StatResponse {
-    pub exists: bool,
-    pub is_directory: bool,
-    pub size: u64,
-}
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

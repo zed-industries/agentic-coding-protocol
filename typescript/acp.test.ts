@@ -7,28 +7,14 @@ import {
   Connection,
   CreateThreadParams,
   CreateThreadResponse,
-  GetThreadEntriesParams,
-  GetThreadEntriesResponse,
-  GetThreadsParams,
-  GetThreadsResponse,
-  GlobSearchParams,
-  GlobSearchResponse,
   InitializeParams,
   InitializeResponse,
-  OpenThreadParams,
-  OpenThreadResponse,
   PushToolCallParams,
   PushToolCallResponse,
-  ReadBinaryFileParams,
-  ReadBinaryFileResponse,
-  ReadTextFileParams,
-  ReadTextFileResponse,
   RequestToolCallConfirmationParams,
   RequestToolCallConfirmationResponse,
   SendMessageParams,
   SendMessageResponse,
-  StatParams,
-  StatResponse,
   StreamMessageChunkParams,
   StreamMessageChunkResponse,
   UpdateToolCallParams,
@@ -44,81 +30,20 @@ describe("Connection", () => {
     agentToClient = new TransformStream();
   });
 
-  it("allows bidirectional communication between client and agent", async () => {
-    class TestClient extends StubClient {
-      async readTextFile({ path }: ReadTextFileParams) {
-        return {
-          content: `Contents of ${path}`,
-          version: 1,
-        };
-      }
-    }
-
-    class TestAgent extends StubAgent {
-      async getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
-        return {
-          threads: [
-            { id: "thread-1", title: "First Thread", modifiedAt: "" },
-            { id: "thread-2", title: "Second Thread", modifiedAt: "" },
-          ],
-        };
-      }
-
-      async openThread(_params: { threadId: string }) {
-        return null;
-      }
-    }
-
-    const agentConnection = Connection.clientToAgent(
-      (agent) => new TestClient(agent),
-      clientToAgent.writable,
-      agentToClient.readable,
-    );
-
-    const clientConnection = Connection.agentToClient(
-      (client) => new TestAgent(client),
-      agentToClient.writable,
-      clientToAgent.readable,
-    );
-
-    const fileContent = await clientConnection.readTextFile({
-      threadId: "thread-1",
-      path: "/test/file.ts",
-    });
-    expect(fileContent).toEqual({
-      content: "Contents of /test/file.ts",
-      version: 1,
-    });
-
-    const threads = await agentConnection.getThreads!(null);
-    expect(threads).toEqual({
-      threads: [
-        { id: "thread-1", title: "First Thread", modifiedAt: "" },
-        { id: "thread-2", title: "Second Thread", modifiedAt: "" },
-      ],
-    });
-
-    const threadData = await agentConnection.openThread!({
-      threadId: "thread-1",
-    });
-    expect(threadData).toBeNull();
-  });
-
   it("handles errors in bidirectional communication", async () => {
     // Create client that throws errors
     class TestClient extends StubClient {
-      async readTextFile(_params: ReadTextFileParams): Promise<never> {
-        throw new Error("File not found");
+      async pushToolCall(_: PushToolCallParams): Promise<PushToolCallResponse> {
+        throw new Error("Tool call failed");
       }
     }
 
     // Create agent that throws errors
     class TestAgent extends StubAgent {
-      async getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
-        throw new Error("Failed to list threads");
-      }
-      async openThread(_: OpenThreadParams): Promise<OpenThreadResponse> {
-        throw new Error("Failed to open thread");
+      async createThreads(
+        _: CreateThreadParams,
+      ): Promise<CreateThreadResponse> {
+        throw new Error("Failed to create thread");
       }
     }
 
@@ -137,14 +62,15 @@ describe("Connection", () => {
 
     // Test error handling in client->agent direction
     await expect(
-      clientConnection.readTextFile({
+      clientConnection.pushToolCall({
         threadId: "thread-1",
-        path: "/missing.ts",
+        label: "/missing.ts",
+        icon: "fileSearch",
       }),
     ).rejects.toThrow();
 
     // Test error handling in agent->client direction
-    await expect(agentConnection.getThreads!(null)).rejects.toThrow();
+    await expect(agentConnection.createThread!(null)).rejects.toThrow();
   });
 
   it("handles concurrent requests", async () => {
@@ -152,33 +78,23 @@ describe("Connection", () => {
 
     // Create client with delayed responses
     class TestClient extends StubClient {
-      async readTextFile({ path }: ReadTextFileParams) {
+      toolCall: number = 0;
+
+      async pushToolCall(_: PushToolCallParams): Promise<PushToolCallResponse> {
+        this.toolCall++;
+        const id = this.toolCall;
         await new Promise((resolve) => setTimeout(resolve, 40));
-        return {
-          content: `Delayed content of ${path}`,
-          version: Date.now(),
-        };
+        return { id };
       }
     }
 
     // Create agent with delayed responses
     class TestAgent extends StubAgent {
-      async getThreads() {
+      async createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
         callCount++;
+        const threadId = `thread-${callCount}`;
         await new Promise((resolve) => setTimeout(resolve, 50));
-        return {
-          threads: [
-            {
-              id: `thread-${callCount}`,
-              title: `Thread ${callCount}`,
-              modifiedAt: "",
-            },
-          ],
-        };
-      }
-      async openThread(_params: { threadId: string }) {
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        return null;
+        return { threadId };
       }
     }
 
@@ -196,35 +112,34 @@ describe("Connection", () => {
 
     // Send multiple concurrent requests
     const promises = [
-      clientConnection.readTextFile({
+      agentConnection.createThread(null),
+      clientConnection.pushToolCall({
         threadId: "test-thread",
-        path: "/file1.ts",
+        label: "Tool Call 1",
+        icon: "fileSearch",
       }),
-      clientConnection.readTextFile({
+      clientConnection.pushToolCall({
         threadId: "test-thread",
-        path: "/file2.ts",
+        label: "Tool Call 2",
+        icon: "fileSearch",
       }),
-      agentConnection.getThreads!(null),
-      agentConnection.openThread!({ threadId: "test-thread" }),
-      agentConnection.getThreads!(null),
+      agentConnection.createThread(null),
+      clientConnection.pushToolCall({
+        threadId: "test-thread",
+        label: "Tool Call 3",
+        icon: "fileSearch",
+      }),
     ];
 
     const results = await Promise.all(promises);
 
     // Verify all requests completed successfully
-    expect(results[0]).toHaveProperty(
-      "content",
-      "Delayed content of /file1.ts",
-    );
-    expect(results[1]).toHaveProperty(
-      "content",
-      "Delayed content of /file2.ts",
-    );
-    expect(results[2]).toHaveProperty("threads");
-    expect(results[3]).toBeNull();
-    expect(results[4]).toHaveProperty("threads");
+    expect(results[0]).toHaveProperty("threadId", "thread-1");
+    expect(results[1]).toHaveProperty("id", 1);
+    expect(results[2]).toHaveProperty("id", 2);
+    expect(results[3]).toHaveProperty("threadId", "thread-2");
+    expect(results[4]).toHaveProperty("id", 3);
 
-    // Verify that concurrent getThreads calls were handled
     expect(callCount).toBe(2);
   });
 
@@ -232,20 +147,22 @@ describe("Connection", () => {
     const messageLog: string[] = [];
 
     class TestClient extends StubClient {
-      async readTextFile({ path }: ReadTextFileParams) {
-        messageLog.push(`readTextFile called with ${path}`);
-        return { content: "", version: 0 };
+      async pushToolCall(_: PushToolCallParams): Promise<PushToolCallResponse> {
+        messageLog.push("pushToolCall called");
+        return { id: 0 };
+      }
+      async updateToolCall(
+        _: UpdateToolCallParams,
+      ): Promise<UpdateToolCallResponse> {
+        messageLog.push("updateToolCall called");
+        return null;
       }
     }
 
     class TestAgent extends StubAgent {
-      async getThreads() {
-        messageLog.push("getThreads called");
-        return { threads: [] };
-      }
-      async openThread({ threadId }: OpenThreadParams) {
-        messageLog.push(`openThread called with ${threadId}`);
-        return null;
+      async initialize(_: InitializeParams): Promise<InitializeResponse> {
+        messageLog.push("initialize called");
+        return { isAuthenticated: true };
       }
     }
 
@@ -263,23 +180,27 @@ describe("Connection", () => {
     );
 
     // Send requests in specific order
-    await clientConnection.readTextFile({
+    await agentConnection.initialize!(null);
+    let { id } = await clientConnection.pushToolCall({
       threadId: "thread-x",
-      path: "/first.ts",
+      icon: "folder",
+      label: "Folder",
     });
-    await agentConnection.getThreads!(null);
-    await clientConnection.readTextFile({
+    await clientConnection.updateToolCall({
+      content: {
+        type: "markdown",
+        markdown: "Markdown",
+      },
+      status: "finished",
       threadId: "thread-x",
-      path: "/second.ts",
+      toolCallId: id,
     });
-    await agentConnection.openThread!({ threadId: "thread-x" });
 
     // Verify order
     expect(messageLog).toEqual([
-      "readTextFile called with /first.ts",
-      "getThreads called",
-      "readTextFile called with /second.ts",
-      "openThread called with thread-x",
+      "initialize called",
+      "pushToolCall called",
+      "updateToolCall called",
     ]);
   });
 });
@@ -292,18 +213,7 @@ class StubAgent implements Agent {
   authenticate(_: AuthenticateParams): Promise<AuthenticateResponse> {
     throw new Error("Method not implemented.");
   }
-  getThreads(_: GetThreadsParams): Promise<GetThreadsResponse> {
-    throw new Error("Method not implemented.");
-  }
   createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
-    throw new Error("Method not implemented.");
-  }
-  openThread(_: OpenThreadParams): Promise<OpenThreadResponse> {
-    throw new Error("Method not implemented.");
-  }
-  getThreadEntries(
-    _: GetThreadEntriesParams,
-  ): Promise<GetThreadEntriesResponse> {
     throw new Error("Method not implemented.");
   }
   sendMessage(_: SendMessageParams): Promise<SendMessageResponse> {
@@ -316,18 +226,6 @@ class StubClient implements Client {
   streamMessageChunk(
     _: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse> {
-    throw new Error("Method not implemented.");
-  }
-  readTextFile(_: ReadTextFileParams): Promise<ReadTextFileResponse> {
-    throw new Error("Method not implemented.");
-  }
-  readBinaryFile(_: ReadBinaryFileParams): Promise<ReadBinaryFileResponse> {
-    throw new Error("Method not implemented.");
-  }
-  stat(_: StatParams): Promise<StatResponse> {
-    throw new Error("Method not implemented.");
-  }
-  globSearch(_: GlobSearchParams): Promise<GlobSearchResponse> {
     throw new Error("Method not implemented.");
   }
   requestToolCallConfirmation(

@@ -10,10 +10,6 @@ pub struct TestAgent;
 
 #[async_trait(?Send)]
 impl Agent for TestAgent {
-    async fn get_threads(&self, _request: GetThreadsParams) -> Result<GetThreadsResponse> {
-        Ok(GetThreadsResponse { threads: vec![] })
-    }
-
     async fn initialize(&self, _request: InitializeParams) -> Result<InitializeResponse> {
         Ok(InitializeResponse {
             is_authenticated: true,
@@ -22,10 +18,6 @@ impl Agent for TestAgent {
 
     async fn authenticate(&self, _request: AuthenticateParams) -> Result<AuthenticateResponse> {
         Ok(AuthenticateResponse)
-    }
-
-    async fn open_thread(&self, _request: OpenThreadParams) -> Result<OpenThreadResponse> {
-        Ok(OpenThreadResponse)
     }
 
     async fn create_thread(&self, _request: CreateThreadParams) -> Result<CreateThreadResponse> {
@@ -37,13 +29,6 @@ impl Agent for TestAgent {
     async fn send_message(&self, _request: SendMessageParams) -> Result<SendMessageResponse> {
         Ok(SendMessageResponse)
     }
-
-    async fn get_thread_entries(
-        &self,
-        _request: GetThreadEntriesParams,
-    ) -> Result<GetThreadEntriesResponse> {
-        Ok(GetThreadEntriesResponse { entries: vec![] })
-    }
 }
 
 #[async_trait(?Send)]
@@ -53,35 +38,6 @@ impl Client for TestClient {
         _request: StreamMessageChunkParams,
     ) -> Result<StreamMessageChunkResponse> {
         Ok(StreamMessageChunkResponse {})
-    }
-
-    async fn read_text_file(&self, _request: ReadTextFileParams) -> Result<ReadTextFileResponse> {
-        Ok(ReadTextFileResponse {
-            version: FileVersion(0),
-            content: "the content".into(),
-        })
-    }
-
-    async fn read_binary_file(
-        &self,
-        _request: ReadBinaryFileParams,
-    ) -> Result<ReadBinaryFileResponse> {
-        Ok(ReadBinaryFileResponse {
-            version: FileVersion(0),
-            content: "dGhlIGNvbnRlbnQ=".into(),
-        })
-    }
-
-    async fn stat(&self, _request: StatParams) -> Result<StatResponse> {
-        Ok(StatResponse {
-            exists: false,
-            is_directory: false,
-            size: 0,
-        })
-    }
-
-    async fn glob_search(&self, _request: GlobSearchParams) -> Result<GlobSearchResponse> {
-        Ok(GlobSearchResponse { matches: vec![] })
     }
 
     async fn request_tool_call_confirmation(
@@ -129,25 +85,23 @@ async fn test_client_agent_communication() {
             let _task = tokio::spawn(client_io_task);
             let _task = tokio::spawn(agent_io_task);
 
-            let response = agent_connection.request(ReadTextFileParams {
+            let response = agent_connection.request(PushToolCallParams {
                 thread_id: ThreadId("0".into()),
-                path: "test.txt".into(),
-                line_limit: None,
-                line_offset: None,
+                label: "test".into(),
+                icon: Icon::FileSearch,
             });
             let response = timeout(Duration::from_secs(2), response)
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(response.content, "the content");
-            assert_eq!(response.version.0, 0);
+            assert_eq!(response.id, ToolCallId(0));
 
-            let response = client_connection.request(GetThreadsParams);
+            let response = client_connection.request(CreateThreadParams);
             let response = timeout(Duration::from_secs(2), response)
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(response.threads.len(), 0);
+            assert_eq!(response.thread_id, ThreadId("test-thread".into()));
         })
         .await
 }

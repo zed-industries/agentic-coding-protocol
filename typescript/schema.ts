@@ -5,10 +5,6 @@ export type AgentCodingProtocol =
   | AnyAgentResult;
 export type AnyClientRequest =
   | StreamMessageChunkParams
-  | ReadTextFileParams
-  | ReadBinaryFileParams
-  | StatParams
-  | GlobSearchParams
   | RequestToolCallConfirmationParams
   | PushToolCallParams
   | UpdateToolCallParams;
@@ -71,15 +67,10 @@ export type ToolCallStatus = "running" | "finished" | "error";
 export type ToolCallId = number;
 export type AnyClientResult =
   | StreamMessageChunkResponse
-  | ReadTextFileResponse
-  | ReadBinaryFileResponse
-  | StatResponse
-  | GlobSearchResponse
   | RequestToolCallConfirmationResponse
   | PushToolCallResponse
   | UpdateToolCallResponse;
 export type StreamMessageChunkResponse = null;
-export type FileVersion = number;
 export type ToolCallConfirmationOutcome =
   | "allow"
   | "alwaysAllow"
@@ -90,55 +81,22 @@ export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
   | InitializeParams
   | AuthenticateParams
-  | GetThreadsParams
   | CreateThreadParams
-  | OpenThreadParams
-  | GetThreadEntriesParams
   | SendMessageParams;
 export type InitializeParams = null;
 export type AuthenticateParams = null;
-export type GetThreadsParams = null;
 export type CreateThreadParams = null;
 export type Role = "user" | "assistant";
 export type AnyAgentResult =
   | InitializeResponse
   | AuthenticateResponse
-  | GetThreadsResponse
   | CreateThreadResponse
-  | OpenThreadResponse
-  | GetThreadEntriesResponse
   | SendMessageResponse;
 export type AuthenticateResponse = null;
-export type OpenThreadResponse = null;
-export type ThreadEntry = {
-  type: "message";
-  chunks: MessageChunk[];
-  role: Role;
-};
 export type SendMessageResponse = null;
 
 export interface StreamMessageChunkParams {
   chunk: MessageChunk;
-  threadId: ThreadId;
-}
-export interface ReadTextFileParams {
-  lineLimit?: number | null;
-  lineOffset?: number | null;
-  path: string;
-  threadId: ThreadId;
-}
-export interface ReadBinaryFileParams {
-  byteLimit?: number | null;
-  byteOffset?: number | null;
-  path: string;
-  threadId: ThreadId;
-}
-export interface StatParams {
-  path: string;
-  threadId: ThreadId;
-}
-export interface GlobSearchParams {
-  pattern: string;
   threadId: ThreadId;
 }
 export interface RequestToolCallConfirmationParams {
@@ -158,34 +116,12 @@ export interface UpdateToolCallParams {
   threadId: ThreadId;
   toolCallId: ToolCallId;
 }
-export interface ReadTextFileResponse {
-  content: string;
-  version: FileVersion;
-}
-export interface ReadBinaryFileResponse {
-  content: string;
-  version: FileVersion;
-}
-export interface StatResponse {
-  exists: boolean;
-  isDirectory: boolean;
-  size: number;
-}
-export interface GlobSearchResponse {
-  matches: string[];
-}
 export interface RequestToolCallConfirmationResponse {
   id: ToolCallId;
   outcome: ToolCallConfirmationOutcome;
 }
 export interface PushToolCallResponse {
   id: ToolCallId;
-}
-export interface OpenThreadParams {
-  threadId: ThreadId;
-}
-export interface GetThreadEntriesParams {
-  threadId: ThreadId;
 }
 export interface SendMessageParams {
   message: Message;
@@ -198,29 +134,14 @@ export interface Message {
 export interface InitializeResponse {
   isAuthenticated: boolean;
 }
-export interface GetThreadsResponse {
-  threads: ThreadMetadata[];
-}
-export interface ThreadMetadata {
-  title: string;
-  id: ThreadId;
-  modifiedAt: string;
-}
 export interface CreateThreadResponse {
   threadId: ThreadId;
-}
-export interface GetThreadEntriesResponse {
-  entries: ThreadEntry[];
 }
 
 export interface Client {
   streamMessageChunk(
     params: StreamMessageChunkParams,
   ): Promise<StreamMessageChunkResponse>;
-  readTextFile(params: ReadTextFileParams): Promise<ReadTextFileResponse>;
-  readBinaryFile(params: ReadBinaryFileParams): Promise<ReadBinaryFileResponse>;
-  stat(params: StatParams): Promise<StatResponse>;
-  globSearch(params: GlobSearchParams): Promise<GlobSearchResponse>;
   requestToolCallConfirmation(
     params: RequestToolCallConfirmationParams,
   ): Promise<RequestToolCallConfirmationResponse>;
@@ -230,10 +151,6 @@ export interface Client {
 
 export const CLIENT_METHODS = new Set([
   "streamMessageChunk",
-  "readTextFile",
-  "readBinaryFile",
-  "stat",
-  "globSearch",
   "requestToolCallConfirmation",
   "pushToolCall",
   "updateToolCall",
@@ -242,21 +159,13 @@ export const CLIENT_METHODS = new Set([
 export interface Agent {
   initialize(params: InitializeParams): Promise<InitializeResponse>;
   authenticate(params: AuthenticateParams): Promise<AuthenticateResponse>;
-  getThreads(params: GetThreadsParams): Promise<GetThreadsResponse>;
   createThread(params: CreateThreadParams): Promise<CreateThreadResponse>;
-  openThread(params: OpenThreadParams): Promise<OpenThreadResponse>;
-  getThreadEntries(
-    params: GetThreadEntriesParams,
-  ): Promise<GetThreadEntriesResponse>;
   sendMessage(params: SendMessageParams): Promise<SendMessageResponse>;
 }
 
 export const AGENT_METHODS = new Set([
   "initialize",
   "authenticate",
-  "getThreads",
   "createThread",
-  "openThread",
-  "getThreadEntries",
   "sendMessage",
 ]);
