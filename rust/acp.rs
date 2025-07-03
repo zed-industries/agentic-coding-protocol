@@ -105,7 +105,7 @@ impl ClientConnection {
             let result = result.await?;
             R::response_from_any(result).ok_or_else(|| Error {
                 code: -32700,
-                message: format!("Could not parse"),
+                message: "Could not parse".to_string(),
             })
         }
     }
@@ -252,7 +252,7 @@ where
                                         incoming_tx.unbounded_send((message.id, params)).ok();
                                     }
                                     Err(error) => {
-                                        log::error!("failed to parse incoming {method} message params: {}. Raw: {}", error, incoming_line);
+                                        log::error!("failed to parse incoming {method} message params: {error}. Raw: {incoming_line}");
                                     }
                                 }
                             } else if let Some(error) = message.error {
@@ -267,7 +267,7 @@ where
                                             tx.send(Ok(result)).ok();
                                         }
                                         Err(error) => {
-                                            log::error!("failed to parse {method} message result: {}. Raw: {}", error, result);
+                                            log::error!("failed to parse {method} message result: {error}. Raw: {result}");
                                         }
                                     }
                                 } else {
@@ -276,7 +276,7 @@ where
                             }
                         }
                         Err(error) => {
-                            log::error!("failed to parse incoming message: {}. Raw: {}", error, incoming_line);
+                            log::error!("failed to parse incoming message: {error}. Raw: {incoming_line}");
                         }
                     }
                     incoming_line.clear();
