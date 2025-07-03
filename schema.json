@@ -24,9 +24,6 @@
           "$ref": "#/$defs/AuthenticateParams"
         },
         {
-          "$ref": "#/$defs/CreateThreadParams"
-        },
-        {
           "$ref": "#/$defs/SendUserMessageParams"
         },
         {
@@ -41,9 +38,6 @@
         },
         {
           "$ref": "#/$defs/AuthenticateResponse"
-        },
-        {
-          "$ref": "#/$defs/CreateThreadResponse"
         },
         {
           "$ref": "#/$defs/SendUserMessageResponse"
@@ -122,28 +116,10 @@
       "type": "null"
     },
     "CancelSendMessageParams": {
-      "type": "object",
-      "properties": {
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId"]
+      "type": "null"
     },
     "CancelSendMessageResponse": {
       "type": "null"
-    },
-    "CreateThreadParams": {
-      "type": "null"
-    },
-    "CreateThreadResponse": {
-      "type": "object",
-      "properties": {
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        }
-      },
-      "required": ["threadId"]
     },
     "Icon": {
       "type": "string",
@@ -188,12 +164,9 @@
         },
         "label": {
           "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "label", "icon"]
+      "required": ["label", "icon"]
     },
     "PushToolCallResponse": {
       "type": "object",
@@ -225,12 +198,9 @@
         },
         "label": {
           "type": "string"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "label", "icon", "confirmation"]
+      "required": ["label", "icon", "confirmation"]
     },
     "RequestToolCallConfirmationResponse": {
       "type": "object",
@@ -249,12 +219,9 @@
       "properties": {
         "message": {
           "$ref": "#/$defs/UserMessage"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "message"]
+      "required": ["message"]
     },
     "SendUserMessageResponse": {
       "type": "null"
@@ -264,18 +231,12 @@
       "properties": {
         "chunk": {
           "$ref": "#/$defs/AssistantMessageChunk"
-        },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
         }
       },
-      "required": ["threadId", "chunk"]
+      "required": ["chunk"]
     },
     "StreamAssistantMessageChunkResponse": {
       "type": "null"
-    },
-    "ThreadId": {
-      "type": "string"
     },
     "ToolCallConfirmation": {
       "oneOf": [
@@ -439,14 +400,11 @@
         "status": {
           "$ref": "#/$defs/ToolCallStatus"
         },
-        "threadId": {
-          "$ref": "#/$defs/ThreadId"
-        },
         "toolCallId": {
           "$ref": "#/$defs/ToolCallId"
         }
       },
-      "required": ["threadId", "toolCallId", "status", "content"]
+      "required": ["toolCallId", "status", "content"]
     },
     "UpdateToolCallResponse": {
       "type": "null"

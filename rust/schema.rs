@@ -190,12 +190,6 @@ acp_peer!(
         AuthenticateResponse
     ),
     (
-        create_thread,
-        "createThread",
-        CreateThreadParams,
-        CreateThreadResponse
-    ),
-    (
         send_user_message,
         "sendUserMessage",
         SendUserMessageParams,
@@ -249,39 +243,13 @@ pub enum AssistantMessageChunk {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadMetadata {
-    pub id: ThreadId,
     pub title: String,
     pub modified_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateThreadParams;
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateThreadResponse {
-    pub thread_id: ThreadId,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct OpenThreadParams {
-    pub thread_id: ThreadId,
-}
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
-pub struct OpenThreadResponse;
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub struct ThreadId(pub String);
-
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub struct SendUserMessageParams {
-    pub thread_id: ThreadId,
     pub message: UserMessage,
 }
 
@@ -292,7 +260,6 @@ pub struct SendUserMessageResponse;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct StreamAssistantMessageChunkParams {
-    pub thread_id: ThreadId,
     pub chunk: AssistantMessageChunk,
 }
 
@@ -303,7 +270,6 @@ pub struct StreamAssistantMessageChunkResponse;
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestToolCallConfirmationParams {
-    pub thread_id: ThreadId,
     pub label: String,
     pub icon: Icon,
     pub confirmation: ToolCallConfirmation,
@@ -378,7 +344,6 @@ pub enum ToolCallConfirmationOutcome {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PushToolCallParams {
-    pub thread_id: ThreadId,
     pub label: String,
     pub icon: Icon,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -398,7 +363,6 @@ pub struct ToolCallId(pub u64);
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateToolCallParams {
-    pub thread_id: ThreadId,
     pub tool_call_id: ToolCallId,
     pub status: ToolCallStatus,
     pub content: Option<ToolCallContent>,
@@ -437,9 +401,7 @@ pub struct Diff {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct CancelSendMessageParams {
-    pub thread_id: ThreadId,
-}
+pub struct CancelSendMessageParams;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]

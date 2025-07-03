@@ -7,8 +7,6 @@ import {
   CancelSendMessageResponse,
   Client,
   Connection,
-  CreateThreadParams,
-  CreateThreadResponse,
   InitializeParams,
   InitializeResponse,
   PushToolCallParams,
@@ -42,9 +40,7 @@ describe("Connection", () => {
 
     // Create agent that throws errors
     class TestAgent extends StubAgent {
-      async createThreads(
-        _: CreateThreadParams,
-      ): Promise<CreateThreadResponse> {
+      async initialize(): Promise<InitializeResponse> {
         throw new Error("Failed to create thread");
       }
     }
@@ -65,19 +61,16 @@ describe("Connection", () => {
     // Test error handling in client->agent direction
     await expect(
       clientConnection.pushToolCall({
-        threadId: "thread-1",
         label: "/missing.ts",
         icon: "fileSearch",
       }),
     ).rejects.toThrow();
 
     // Test error handling in agent->client direction
-    await expect(agentConnection.createThread!(null)).rejects.toThrow();
+    await expect(agentConnection.initialize(null)).rejects.toThrow();
   });
 
   it("handles concurrent requests", async () => {
-    let callCount = 0;
-
     // Create client with delayed responses
     class TestClient extends StubClient {
       toolCall: number = 0;
@@ -85,22 +78,17 @@ describe("Connection", () => {
       async pushToolCall(_: PushToolCallParams): Promise<PushToolCallResponse> {
         this.toolCall++;
         const id = this.toolCall;
+        console.log(id);
         await new Promise((resolve) => setTimeout(resolve, 40));
+        console.log(id);
         return { id };
       }
     }
 
     // Create agent with delayed responses
-    class TestAgent extends StubAgent {
-      async createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
-        callCount++;
-        const threadId = `thread-${callCount}`;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        return { threadId };
-      }
-    }
+    class TestAgent extends StubAgent {}
 
-    const agentConnection = Connection.clientToAgent(
+    Connection.clientToAgent(
       (a) => new TestClient(a),
       clientToAgent.writable,
       agentToClient.readable,
@@ -114,20 +102,15 @@ describe("Connection", () => {
 
     // Send multiple concurrent requests
     const promises = [
-      agentConnection.createThread(null),
       clientConnection.pushToolCall({
-        threadId: "test-thread",
         label: "Tool Call 1",
         icon: "fileSearch",
       }),
       clientConnection.pushToolCall({
-        threadId: "test-thread",
         label: "Tool Call 2",
         icon: "fileSearch",
       }),
-      agentConnection.createThread(null),
       clientConnection.pushToolCall({
-        threadId: "test-thread",
         label: "Tool Call 3",
         icon: "fileSearch",
       }),
@@ -136,13 +119,9 @@ describe("Connection", () => {
     const results = await Promise.all(promises);
 
     // Verify all requests completed successfully
-    expect(results[0]).toHaveProperty("threadId", "thread-1");
-    expect(results[1]).toHaveProperty("id", 1);
-    expect(results[2]).toHaveProperty("id", 2);
-    expect(results[3]).toHaveProperty("threadId", "thread-2");
-    expect(results[4]).toHaveProperty("id", 3);
-
-    expect(callCount).toBe(2);
+    expect(results[0]).toHaveProperty("id", 1);
+    expect(results[1]).toHaveProperty("id", 2);
+    expect(results[2]).toHaveProperty("id", 3);
   });
 
   it("handles message ordering correctly", async () => {
@@ -184,7 +163,6 @@ describe("Connection", () => {
     // Send requests in specific order
     await agentConnection.initialize!(null);
     let { id } = await clientConnection.pushToolCall({
-      threadId: "thread-x",
       icon: "folder",
       label: "Folder",
     });
@@ -194,7 +172,6 @@ describe("Connection", () => {
         markdown: "Markdown",
       },
       status: "finished",
-      threadId: "thread-x",
       toolCallId: id,
     });
 
@@ -213,9 +190,6 @@ class StubAgent implements Agent {
     throw new Error("Method not implemented.");
   }
   authenticate(_: AuthenticateParams): Promise<AuthenticateResponse> {
-    throw new Error("Method not implemented.");
-  }
-  createThread(_: CreateThreadParams): Promise<CreateThreadResponse> {
     throw new Error("Method not implemented.");
   }
   sendUserMessage(_: SendUserMessageParams): Promise<SendUserMessageResponse> {

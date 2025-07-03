@@ -17,7 +17,6 @@ export type AssistantMessageChunk =
       type: "thought";
       chunk: string;
     };
-export type ThreadId = string;
 export type ToolCallConfirmation =
   | {
       description?: string | null;
@@ -84,20 +83,18 @@ export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
   | InitializeParams
   | AuthenticateParams
-  | CreateThreadParams
   | SendUserMessageParams
   | CancelSendMessageParams;
 export type InitializeParams = null;
 export type AuthenticateParams = null;
-export type CreateThreadParams = null;
 export type UserMessageChunk = {
   type: "text";
   chunk: string;
 };
+export type CancelSendMessageParams = null;
 export type AnyAgentResult =
   | InitializeResponse
   | AuthenticateResponse
-  | CreateThreadResponse
   | SendUserMessageResponse
   | CancelSendMessageResponse;
 export type AuthenticateResponse = null;
@@ -106,25 +103,21 @@ export type CancelSendMessageResponse = null;
 
 export interface StreamAssistantMessageChunkParams {
   chunk: AssistantMessageChunk;
-  threadId: ThreadId;
 }
 export interface RequestToolCallConfirmationParams {
   confirmation: ToolCallConfirmation;
   content?: ToolCallContent | null;
   icon: Icon;
   label: string;
-  threadId: ThreadId;
 }
 export interface PushToolCallParams {
   content?: ToolCallContent | null;
   icon: Icon;
   label: string;
-  threadId: ThreadId;
 }
 export interface UpdateToolCallParams {
   content: ToolCallContent | null;
   status: ToolCallStatus;
-  threadId: ThreadId;
   toolCallId: ToolCallId;
 }
 export interface RequestToolCallConfirmationResponse {
@@ -136,19 +129,12 @@ export interface PushToolCallResponse {
 }
 export interface SendUserMessageParams {
   message: UserMessage;
-  threadId: ThreadId;
 }
 export interface UserMessage {
   chunks: UserMessageChunk[];
 }
-export interface CancelSendMessageParams {
-  threadId: ThreadId;
-}
 export interface InitializeResponse {
   isAuthenticated: boolean;
-}
-export interface CreateThreadResponse {
-  threadId: ThreadId;
 }
 
 export interface Client {
@@ -172,7 +158,6 @@ export const CLIENT_METHODS = new Set([
 export interface Agent {
   initialize(params: InitializeParams): Promise<InitializeResponse>;
   authenticate(params: AuthenticateParams): Promise<AuthenticateResponse>;
-  createThread(params: CreateThreadParams): Promise<CreateThreadResponse>;
   sendUserMessage(
     params: SendUserMessageParams,
   ): Promise<SendUserMessageResponse>;
@@ -184,7 +169,6 @@ export interface Agent {
 export const AGENT_METHODS = new Set([
   "initialize",
   "authenticate",
-  "createThread",
   "sendUserMessage",
   "cancelSendMessage",
 ]);

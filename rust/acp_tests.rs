@@ -19,12 +19,6 @@ impl Agent for TestAgent {
         Ok(AuthenticateResponse)
     }
 
-    async fn create_thread(&self, _request: CreateThreadParams) -> Result<CreateThreadResponse> {
-        Ok(CreateThreadResponse {
-            thread_id: ThreadId("test-thread".into()),
-        })
-    }
-
     async fn send_user_message(
         &self,
         _request: SendUserMessageParams,
@@ -95,7 +89,6 @@ async fn test_client_agent_communication() {
             let _task = tokio::spawn(agent_io_task);
 
             let response = agent_connection.request(PushToolCallParams {
-                thread_id: ThreadId("0".into()),
                 label: "test".into(),
                 icon: Icon::FileSearch,
                 content: None,
@@ -106,12 +99,12 @@ async fn test_client_agent_communication() {
                 .unwrap();
             assert_eq!(response.id, ToolCallId(0));
 
-            let response = client_connection.request(CreateThreadParams);
+            let response = client_connection.request(InitializeParams);
             let response = timeout(Duration::from_secs(2), response)
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(response.thread_id, ThreadId("test-thread".into()));
+            assert_eq!(response.is_authenticated, true);
         })
         .await
 }
