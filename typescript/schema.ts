@@ -78,13 +78,15 @@ export type ToolCallConfirmationOutcome =
   | "alwaysAllow"
   | "alwaysAllowMcpServer"
   | "alwaysAllowTool"
-  | "reject";
+  | "reject"
+  | "cancel";
 export type UpdateToolCallResponse = null;
 export type AnyAgentRequest =
   | InitializeParams
   | AuthenticateParams
   | CreateThreadParams
-  | SendUserMessageParams;
+  | SendUserMessageParams
+  | CancelSendMessageParams;
 export type InitializeParams = null;
 export type AuthenticateParams = null;
 export type CreateThreadParams = null;
@@ -96,9 +98,11 @@ export type AnyAgentResult =
   | InitializeResponse
   | AuthenticateResponse
   | CreateThreadResponse
-  | SendUserMessageResponse;
+  | SendUserMessageResponse
+  | CancelSendMessageResponse;
 export type AuthenticateResponse = null;
 export type SendUserMessageResponse = null;
+export type CancelSendMessageResponse = null;
 
 export interface StreamAssistantMessageChunkParams {
   chunk: AssistantMessageChunk;
@@ -137,6 +141,9 @@ export interface SendUserMessageParams {
 export interface UserMessage {
   chunks: UserMessageChunk[];
 }
+export interface CancelSendMessageParams {
+  threadId: ThreadId;
+}
 export interface InitializeResponse {
   isAuthenticated: boolean;
 }
@@ -169,6 +176,9 @@ export interface Agent {
   sendUserMessage(
     params: SendUserMessageParams,
   ): Promise<SendUserMessageResponse>;
+  cancelSendMessage(
+    params: CancelSendMessageParams,
+  ): Promise<CancelSendMessageResponse>;
 }
 
 export const AGENT_METHODS = new Set([
@@ -176,4 +186,5 @@ export const AGENT_METHODS = new Set([
   "authenticate",
   "createThread",
   "sendUserMessage",
+  "cancelSendMessage",
 ]);

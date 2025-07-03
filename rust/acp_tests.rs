@@ -31,6 +31,13 @@ impl Agent for TestAgent {
     ) -> Result<SendUserMessageResponse> {
         Ok(SendUserMessageResponse)
     }
+
+    async fn cancel_send_message(
+        &self,
+        _request: CancelSendMessageParams,
+    ) -> Result<CancelSendMessageResponse> {
+        Ok(CancelSendMessageResponse)
+    }
 }
 
 #[async_trait(?Send)]

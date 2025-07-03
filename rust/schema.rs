@@ -200,6 +200,12 @@ acp_peer!(
         "sendUserMessage",
         SendUserMessageParams,
         SendUserMessageResponse
+    ),
+    (
+        cancel_send_message,
+        "cancelSendMessage",
+        CancelSendMessageParams,
+        CancelSendMessageResponse
     )
 );
 
@@ -366,6 +372,7 @@ pub enum ToolCallConfirmationOutcome {
     AlwaysAllowMcpServer,
     AlwaysAllowTool,
     Reject,
+    Cancel,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -427,3 +434,13 @@ pub struct Diff {
     pub old_text: Option<String>,
     pub new_text: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelSendMessageParams {
+    pub thread_id: ThreadId,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelSendMessageResponse;

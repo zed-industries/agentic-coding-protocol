@@ -28,6 +28,9 @@
         },
         {
           "$ref": "#/$defs/SendUserMessageParams"
+        },
+        {
+          "$ref": "#/$defs/CancelSendMessageParams"
         }
       ]
     },
@@ -44,6 +47,9 @@
         },
         {
           "$ref": "#/$defs/SendUserMessageResponse"
+        },
+        {
+          "$ref": "#/$defs/CancelSendMessageResponse"
         }
       ]
     },
@@ -113,6 +119,18 @@
       "type": "null"
     },
     "AuthenticateResponse": {
+      "type": "null"
+    },
+    "CancelSendMessageParams": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "$ref": "#/$defs/ThreadId"
+        }
+      },
+      "required": ["threadId"]
+    },
+    "CancelSendMessageResponse": {
       "type": "null"
     },
     "CreateThreadParams": {
@@ -356,7 +374,8 @@
         "alwaysAllow",
         "alwaysAllowMcpServer",
         "alwaysAllowTool",
-        "reject"
+        "reject",
+        "cancel"
       ]
     },
     "ToolCallContent": {

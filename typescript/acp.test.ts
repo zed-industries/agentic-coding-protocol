@@ -3,6 +3,8 @@ import {
   Agent,
   AuthenticateParams,
   AuthenticateResponse,
+  CancelSendMessageParams,
+  CancelSendMessageResponse,
   Client,
   Connection,
   CreateThreadParams,
@@ -217,6 +219,11 @@ class StubAgent implements Agent {
     throw new Error("Method not implemented.");
   }
   sendUserMessage(_: SendUserMessageParams): Promise<SendUserMessageResponse> {
+    throw new Error("Method not implemented.");
+  }
+  cancelSendMessage(
+    _: CancelSendMessageParams,
+  ): Promise<CancelSendMessageResponse> {
     throw new Error("Method not implemented.");
   }
 }
