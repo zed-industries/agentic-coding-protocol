@@ -4,6 +4,25 @@ use async_trait::async_trait;
 use tokio::task::LocalSet;
 use tokio::time::{Duration, timeout};
 
+#[acp_macros::acp_peer]
+trait Test {
+    fn foo(&self, name: String, age: u32) -> FooResponse;
+    fn bar(&self) -> BarResponse;
+    fn void(&self);
+}
+
+struct FooResponse;
+struct BarResponse;
+
+pub struct T {
+    f: FooParams,
+}
+
+#[test]
+fn test_x() {
+    let _ = VoidParams;
+}
+
 pub struct TestClient;
 pub struct TestAgent;
 

@@ -1,0 +1,14 @@
+[package]
+name = "acp-macros"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+convert_case = "0.4"

@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use acp_macros::acp_peer;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

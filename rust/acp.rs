@@ -26,6 +26,16 @@ use std::{
     },
 };
 
+#[acp_macros::acp_peer]
+trait Test {
+    async fn cheer(&self, name: String, age: u16) -> CheerResponse;
+}
+
+#[derive(::serde::Deserialize, ::serde::Serialize, ::schemars::JsonSchema)]
+struct CheerResponse {
+    message: String,
+}
+
 /// A connection to a separate agent process over the ACP protocol.
 pub struct AgentConnection(Connection<AnyClientRequest, AnyAgentRequest>);
 
