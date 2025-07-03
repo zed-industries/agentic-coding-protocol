@@ -57,7 +57,7 @@ impl AgentConnection {
     }
 
     /// Send a request to the agent and wait for a response.
-    pub fn request<R: AgentRequest>(
+    pub fn request<R: AgentRequest + 'static>(
         &self,
         params: R,
     ) -> impl Future<Output = Result<R::Response, crate::Error>> {
@@ -98,7 +98,7 @@ impl ClientConnection {
     pub fn request<R: ClientRequest>(
         &self,
         params: R,
-    ) -> impl Future<Output = Result<R::Response, crate::Error>> {
+    ) -> impl use<R> + Future<Output = Result<R::Response, crate::Error>> {
         let params = params.into_any();
         let result = self.0.request(params.method_name(), params);
         async move {
@@ -193,7 +193,7 @@ where
         &self,
         method: &'static str,
         params: Out,
-    ) -> impl Future<Output = Result<Out::Response, crate::Error>> {
+    ) -> impl use<In, Out> + Future<Output = Result<Out::Response, crate::Error>> {
         let (tx, rx) = oneshot::channel();
         let id = self.next_id.fetch_add(1, SeqCst);
         if self
