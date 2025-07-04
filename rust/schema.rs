@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
@@ -264,6 +264,18 @@ impl From<&String> for UserMessageChunk {
 impl From<String> for UserMessageChunk {
     fn from(value: String) -> Self {
         Self::Text { chunk: value }
+    }
+}
+
+impl From<PathBuf> for UserMessageChunk {
+    fn from(value: PathBuf) -> Self {
+        Self::Path { path: value }
+    }
+}
+
+impl From<&Path> for UserMessageChunk {
+    fn from(value: &Path) -> Self {
+        Self::Path { path: value.into() }
     }
 }
 
