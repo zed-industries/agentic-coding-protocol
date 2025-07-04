@@ -89,14 +89,12 @@ export type InitializeParams = null;
 export type AuthenticateParams = null;
 export type UserMessageChunk =
   | {
-      text: {
-        chunk: string;
-      };
+      type: "text";
+      chunk: string;
     }
   | {
-      path: {
-        path: string;
-      };
+      type: "path";
+      path: string;
     };
 export type CancelSendMessageParams = null;
 export type AnyAgentResult =

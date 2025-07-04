@@ -239,7 +239,7 @@ where
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum UserMessageChunk {
     Text { chunk: String },
     Path { path: PathBuf },

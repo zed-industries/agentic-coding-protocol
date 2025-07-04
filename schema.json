@@ -426,34 +426,28 @@
         {
           "type": "object",
           "properties": {
-            "text": {
-              "type": "object",
-              "properties": {
-                "chunk": {
-                  "type": "string"
-                }
-              },
-              "required": ["chunk"]
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "chunk": {
+              "type": "string"
             }
           },
-          "additionalProperties": false,
-          "required": ["text"]
+          "required": ["type", "chunk"]
         },
         {
           "type": "object",
           "properties": {
+            "type": {
+              "type": "string",
+              "const": "path"
+            },
             "path": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                }
-              },
-              "required": ["path"]
+              "type": "string"
             }
           },
-          "additionalProperties": false,
-          "required": ["path"]
+          "required": ["type", "path"]
         }
       ]
     }
