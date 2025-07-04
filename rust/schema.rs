@@ -221,16 +221,50 @@ pub struct AuthenticateParams;
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticateResponse;
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserMessage {
     pub chunks: Vec<UserMessageChunk>,
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "type", rename_all = "camelCase")]
+impl<T> From<T> for UserMessage
+where
+    T: Into<UserMessageChunk>,
+{
+    fn from(value: T) -> Self {
+        Self {
+            chunks: vec![value.into()],
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum UserMessageChunk {
     Text { chunk: String },
+    Path { path: PathBuf },
+}
+
+impl From<&str> for UserMessageChunk {
+    fn from(value: &str) -> Self {
+        Self::Text {
+            chunk: value.into(),
+        }
+    }
+}
+
+impl From<&String> for UserMessageChunk {
+    fn from(value: &String) -> Self {
+        Self::Text {
+            chunk: value.clone(),
+        }
+    }
+}
+
+impl From<String> for UserMessageChunk {
+    fn from(value: String) -> Self {
+        Self::Text { chunk: value }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]

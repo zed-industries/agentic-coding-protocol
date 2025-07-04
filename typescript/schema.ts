@@ -87,10 +87,17 @@ export type AnyAgentRequest =
   | CancelSendMessageParams;
 export type InitializeParams = null;
 export type AuthenticateParams = null;
-export type UserMessageChunk = {
-  type: "text";
-  chunk: string;
-};
+export type UserMessageChunk =
+  | {
+      text: {
+        chunk: string;
+      };
+    }
+  | {
+      path: {
+        path: string;
+      };
+    };
 export type CancelSendMessageParams = null;
 export type AnyAgentResult =
   | InitializeResponse
